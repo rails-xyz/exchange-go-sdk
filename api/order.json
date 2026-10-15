@@ -1,0 +1,1019 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Order API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://order.sandbox.rails.xyz"
+    }
+  ],
+  "paths": {
+    "/api/v1/update-margin-mode": {
+      "post": {
+        "summary": "Update Margin Mode",
+        "operationId": "updateMarginMode",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "market": {
+                    "type": "string",
+                    "description": "Market name. Example value: `BTC-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint."
+                  },
+                  "marginMode": {
+                    "type": "string",
+                    "enum": ["C", "I"],
+                    "description": "Margin mode to set for the market. `C` for cross margin, `I` for isolated margin. Defaults to `C` if this endpoint is never called for the market."
+                  }
+                },
+                "required": ["market", "marginMode"]
+              },
+              "example": {
+                "market": "BTC-USDT",
+                "marginMode": "C"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "A message describing the result of the update margin mode operation."
+                    }
+                  },
+                  "required": ["message"]
+                },
+                "example": {
+                  "message": "margin mode updated successfully"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                },
+                "example": {
+                  "error": {
+                    "slug": "UPDATE_MARGIN_MODE_MARKET_IN_USE",
+                    "code": "PRP-0901"
+                  },
+                  "message": "cannot update margin mode with open orders or positions in the market"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitedNoQuota"
+          }
+        }
+      }
+    },
+    "/api/v1/update-leverage": {
+      "post": {
+        "summary": "Update Leverage",
+        "operationId": "updateLeverage",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "market": {
+                    "type": "string",
+                    "description": "Market name. Example value: `ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint."
+                  },
+                  "leverage": {
+                    "type": "string",
+                    "description": "Leverage to set for the market. Supported values: `1`, `2`, `3`, `4`, `5`."
+                  }
+                },
+                "required": ["market", "leverage"]
+              },
+              "example": {
+                "market": "ETH-USDT",
+                "leverage": "5"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "A message describing the result of the update leverage operation."
+                    }
+                  },
+                  "required": ["message"]
+                },
+                "example": {
+                  "message": "leverage updated successfully"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                },
+                "example": {
+                  "error": {
+                    "slug": "UPDATE_LEVERAGE_NOT_ALLOWED",
+                    "code": "PRP-0702"
+                  },
+                  "message": "leverage update not allowed"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitedNoQuota"
+          }
+        }
+      }
+    },
+    "/api/v1/orders": {
+      "delete": {
+        "summary": "Cancel orders by market or across all markets",
+        "operationId": "cancelOrders",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "query",
+            "required": true,
+            "description": "Market name. Example value: `ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint. To cancel orders across all markets, use the value `all`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "query",
+            "required": false,
+            "description": "Client-generated UUID for correlation. Example value: `0835bf3e-4a20-41f0-908d-8213f2b7a285`. If not provided, a random UUID will be generated.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "description": "A message describing the result of the cancel orders operation."
+                    }
+                  },
+                  "required": ["message"]
+                },
+                "example": {
+                  "message": "Cancelling 1 order for market ETH-USDT without any errors"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/order": {
+      "get": {
+        "summary": "Get Order By ID",
+        "operationId": "getOrderById",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/requiredMarket"
+          },
+          {
+            "$ref": "#/components/parameters/order-id"
+          },
+          {
+            "$ref": "#/components/parameters/client-request-id"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {
+              "X-Api-Quota-Used": {
+                "$ref": "#/components/headers/X-Api-Quota-Used"
+              },
+              "X-Api-Quota-Limit": {
+                "$ref": "#/components/headers/X-Api-Quota-Limit"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getOrderByIdResponse"
+                },
+                "example": {
+                  "order": {
+                    "market": "ETH-USDT",
+                    "orderId": "01HZ36SYBP4Z80GRX30P49XHB5",
+                    "orderType": "sell",
+                    "tradeType": "limit",
+                    "price": "3772.272138",
+                    "quantity": "1",
+                    "filledQuantity": "0.5",
+                    "leverage": "1",
+                    "createdAt": 1717020981622,
+                    "updatedAt": 1717020982756,
+                    "orderStatus": "active",
+                    "clientRequestId": "0835bf3e-4a20-41f0-908d-8213f2b7a285",
+                    "reduceOnly": false,
+                    "postOnly": false,
+                    "avgFillPrice": "3772.272138"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required parameter is missing or a parameter value is invalid. The `message` field names the offending parameter.",
+            "headers": {
+              "X-Api-Quota-Used": {
+                "$ref": "#/components/headers/X-Api-Quota-Used"
+              },
+              "X-Api-Quota-Limit": {
+                "$ref": "#/components/headers/X-Api-Quota-Limit"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                },
+                "example": {
+                  "error": {
+                    "slug": "BAD_REQUEST",
+                    "code": "SYS-0006"
+                  },
+                  "message": "either client-request-id or order-id must be provided."
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/api/v1/open-orders": {
+      "get": {
+        "summary": "Get Open Orders",
+        "operationId": "getOpenOrders",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/market"
+          },
+          {
+            "$ref": "#/components/parameters/start"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {
+              "X-Api-Quota-Used": {
+                "$ref": "#/components/headers/X-Api-Quota-Used"
+              },
+              "X-Api-Quota-Limit": {
+                "$ref": "#/components/headers/X-Api-Quota-Limit"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/openOrdersResponse"
+                },
+                "example": {
+                  "openOrders": [
+                    {
+                      "market": "BTC-USDT",
+                      "orderId": "01HZ36SYBP4Z80GRX30P49XHB6",
+                      "orderType": "buy",
+                      "tradeType": "limit",
+                      "price": "65000",
+                      "quantity": "0.5",
+                      "filledQuantity": "0.5",
+                      "leverage": "1",
+                      "createdAt": 1717020981622,
+                      "updatedAt": 1717020982756,
+                      "orderStatus": "active",
+                      "clientRequestId": "0835bf3e-4a20-41f0-908d-8213f2b7a285",
+                      "reduceOnly": false,
+                      "postOnly": false,
+                      "avgFillPrice": "65000"
+                    },
+                    {
+                      "market": "ETH-USDT",
+                      "orderId": "01HZ36SYBP4Z80GRX30P49XHB5",
+                      "orderType": "sell",
+                      "tradeType": "limit",
+                      "price": "3772.272138",
+                      "quantity": "1",
+                      "filledQuantity": "0.5",
+                      "leverage": "1",
+                      "createdAt": 1717020981622,
+                      "updatedAt": 1717020982756,
+                      "orderStatus": "active",
+                      "clientRequestId": "0835bf3e-4a20-41f0-908d-8213f2b7a285",
+                      "reduceOnly": false,
+                      "postOnly": false,
+                      "avgFillPrice": "3772.272138"
+                    }
+                  ],
+                  "last": "ETH-USDT#01HYXJVRCTDXQSTKZ17ND2SBJH#c3029869-2609-4a0d-8d9b-b030550add28"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required parameter is missing or a parameter value is invalid. The `message` field names the offending parameter.",
+            "headers": {
+              "X-Api-Quota-Used": {
+                "$ref": "#/components/headers/X-Api-Quota-Used"
+              },
+              "X-Api-Quota-Limit": {
+                "$ref": "#/components/headers/X-Api-Quota-Limit"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                },
+                "example": {
+                  "error": {
+                    "slug": "BAD_REQUEST",
+                    "code": "SYS-0006"
+                  },
+                  "message": "invalid market"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/api/v1/completed-orders": {
+      "get": {
+        "summary": "Get Completed Orders",
+        "operationId": "getCompletedOrders",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/pageSize"
+          },
+          {
+            "$ref": "#/components/parameters/startDate"
+          },
+          {
+            "$ref": "#/components/parameters/endDate"
+          },
+          {
+            "$ref": "#/components/parameters/start"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {
+              "X-Api-Quota-Used": {
+                "$ref": "#/components/headers/X-Api-Quota-Used"
+              },
+              "X-Api-Quota-Limit": {
+                "$ref": "#/components/headers/X-Api-Quota-Limit"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/completedOrdersResponse"
+                },
+                "example": {
+                  "completedOrders": [
+                    {
+                      "market": "ETH-USDT",
+                      "matchId": "a59141f0-9c13-4ec8-bc37-beceb7fb284a",
+                      "orderId": "01JP39KFBF8SHJAT3ERHPF3YSP",
+                      "orderType": "buy",
+                      "executionType": "maker",
+                      "fillType": "complete",
+                      "price": "1949",
+                      "quantity": "273.78842139",
+                      "tradeType": "limit",
+                      "fees": "533.61363328",
+                      "triggerType": "none",
+                      "triggerPrice": "0",
+                      "transactionHash": "335a50808317116f2fc1147277bcc226e0e52dfea7b15899d66add371d2ab499",
+                      "filledAt": 1747426816421
+                    },
+                    {
+                      "market": "BTC-USDT",
+                      "matchId": "6d6ca016-fd1d-415a-8a83-25a1f5fc02f4",
+                      "orderId": "01JP390Z8WVR9EP6X1P187P722",
+                      "orderType": "sell",
+                      "executionType": "taker",
+                      "fillType": "complete",
+                      "price": "82850.59187039",
+                      "quantity": "6.34127086",
+                      "tradeType": "market",
+                      "fees": "525.37804396",
+                      "triggerType": "none",
+                      "triggerPrice": "0",
+                      "transactionHash": "4dfb16c92be57701a4498b37c9af9ece0d1109bef5350d9a891e5f2f64eaf6d2",
+                      "filledAt": 1747426816421
+                    }
+                  ],
+                  "last": "BTC-USDT#FEES#01JP390Z8WVR9EP6X1P187P722#01JP36QTCRJCGN7NC0CPZ22NAB@1741719371497"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required parameter is missing or a parameter value is invalid. The `message` field names the offending parameter.",
+            "headers": {
+              "X-Api-Quota-Used": {
+                "$ref": "#/components/headers/X-Api-Quota-Used"
+              },
+              "X-Api-Quota-Limit": {
+                "$ref": "#/components/headers/X-Api-Quota-Limit"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                },
+                "example": {
+                  "error": {
+                    "slug": "BAD_REQUEST",
+                    "code": "SYS-0006"
+                  },
+                  "message": "pageSize must be between 20 and 200"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "headers": {
+      "X-Api-Quota-Used": {
+        "description": "The number of requests you have made in the current rate limit window",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "X-Api-Quota-Limit": {
+        "description": "Your current rate limit (requests per minute)",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "Retry-After": {
+        "description": "Number of seconds to wait before making another request (429 responses only)",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "responses": {
+      "NotFound": {
+        "description": "",
+        "headers": {
+          "X-Api-Quota-Used": {
+            "$ref": "#/components/headers/X-Api-Quota-Used"
+          },
+          "X-Api-Quota-Limit": {
+            "$ref": "#/components/headers/X-Api-Quota-Limit"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/errorResponse"
+            },
+            "example": {
+              "error": {
+                "slug": "NOT_FOUND",
+                "code": "SYS-0007"
+              },
+              "message": "order not found"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "",
+        "headers": {
+          "X-Api-Quota-Used": {
+            "$ref": "#/components/headers/X-Api-Quota-Used"
+          },
+          "X-Api-Quota-Limit": {
+            "$ref": "#/components/headers/X-Api-Quota-Limit"
+          },
+          "Retry-After": {
+            "$ref": "#/components/headers/Retry-After"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/errorResponse"
+            },
+            "example": {
+              "error": {
+                "slug": "TOO_MANY_REQUESTS",
+                "code": "SYS-0003"
+              },
+              "message": "api rate limit exceeded"
+            }
+          }
+        }
+      },
+      "RateLimitedNoQuota": {
+        "description": "",
+        "headers": {
+          "Retry-After": {
+            "$ref": "#/components/headers/Retry-After"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/errorResponse"
+            },
+            "example": {
+              "error": {
+                "slug": "TOO_MANY_REQUESTS",
+                "code": "SYS-0003"
+              },
+              "message": "api call rate limit exceeded"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "description": "A human-readable message describing the error."
+                }
+              },
+              "required": ["message"]
+            },
+            "example": {
+              "message": "Unauthorized"
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "requiredMarket": {
+        "name": "market",
+        "in": "query",
+        "description": "Market name. Example value: `ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint.",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "market": {
+        "name": "market",
+        "in": "query",
+        "description": "Market name. Example value: `ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint. Omit this parameter to get results across all markets.",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "order-id": {
+        "name": "order-id",
+        "in": "query",
+        "description": "Unique identifier of the order. Example value: `01J4MD3R7N4HH4G76PT47VG3QC`. You can get this value from the create order response. Provide either `order-id` or `client-request-id`, not both.",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "client-request-id": {
+        "name": "client-request-id",
+        "in": "query",
+        "description": "Client-generated UUID for correlation. Example value: `0835bf3e-4a20-41f0-908d-8213f2b7a285`. This is the same value as the `clientRequestId` field in the create order request. Provide either `order-id` or `client-request-id`, not both.",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "start": {
+        "name": "start",
+        "in": "query",
+        "required": false,
+        "description": "This is a parameter to support pagination. Get the value from the `last` field if present in the previous response.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "pageSize": {
+        "name": "pageSize",
+        "in": "query",
+        "required": false,
+        "description": "Maximum number of items per page, between `20` and `200`. Defaults to `100`.",
+        "schema": {
+          "type": "integer",
+          "minimum": 20,
+          "maximum": 200,
+          "default": 100
+        }
+      },
+      "startDate": {
+        "name": "startDate",
+        "in": "query",
+        "required": false,
+        "description": "This is a parameter to support querying by date. The value should be in the format of milliseconds since epoch. It can be used alone or in conjunction with the `endDate` parameter.",
+        "schema": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1000000000000,
+          "maximum": 9999999999999
+        }
+      },
+      "endDate": {
+        "name": "endDate",
+        "in": "query",
+        "required": false,
+        "description": "This is a parameter to support querying by date. The value should be in the format of milliseconds since epoch. It can be used alone or in conjunction with the `startDate` parameter.",
+        "schema": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1000000000000,
+          "maximum": 9999999999999
+        }
+      }
+    },
+    "schemas": {
+      "errorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "description": "An object containing error details.",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "description": "A short string identifier for the error type."
+              },
+              "code": {
+                "type": "string",
+                "description": "A string code representing the error."
+              }
+            },
+            "required": ["slug", "code"]
+          },
+          "message": {
+            "type": "string",
+            "description": "A human-readable message describing the error."
+          }
+        },
+        "required": ["error", "message"]
+      },
+      "getOrderByIdResponse": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/order",
+            "description": "Order object containing all details for the requested order."
+          }
+        },
+        "required": ["order"]
+      },
+      "order": {
+        "type": "object",
+        "properties": {
+          "market": {
+            "type": "string",
+            "description": "Market name. Example: 'ETH-USDT'."
+          },
+          "orderId": {
+            "type": "string",
+            "description": "Unique identifier for the order."
+          },
+          "orderType": {
+            "type": "string",
+            "description": "Order side.",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "tradeType": {
+            "type": "string",
+            "description": "Order type.",
+            "enum": [
+              "limit",
+              "market"
+            ]
+          },
+          "price": {
+            "type": "string",
+            "description": "Price used."
+          },
+          "quantity": {
+            "type": "string",
+            "description": "Remaining quantity."
+          },
+          "filledQuantity": {
+            "type": "string",
+            "description": "Filled quantity."
+          },
+          "leverage": {
+            "type": "string",
+            "description": "Leverage used at order creation."
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Order creation timestamp (milliseconds since epoch)."
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Order last update timestamp (milliseconds since epoch)."
+          },
+          "orderStatus": {
+            "type": "string",
+            "description": "Order status.",
+            "enum": [
+              "active",
+              "pending",
+              "cancelling",
+              "cancelled",
+              "modifying",
+              "modified",
+              "rejected",
+              "filled"
+            ]
+          },
+          "clientRequestId": {
+            "type": "string",
+            "description": "Client-generated UUID for correlation."
+          },
+          "reduceOnly": {
+            "type": "boolean",
+            "description": "Reduce-only flag. When `true`, the order can only reduce an existing position."
+          },
+          "postOnly": {
+            "type": "boolean",
+            "description": "Maker-only creation flag."
+          },
+          "avgFillPrice": {
+            "type": "string",
+            "description": "Average price across fills."
+          }
+        },
+        "required": [
+          "market",
+          "orderId",
+          "orderType",
+          "tradeType",
+          "price",
+          "quantity",
+          "filledQuantity",
+          "leverage",
+          "createdAt",
+          "updatedAt",
+          "orderStatus",
+          "reduceOnly",
+          "postOnly"
+        ]
+      },
+      "openOrdersResponse": {
+        "type": "object",
+        "properties": {
+          "openOrders": {
+            "type": "array",
+            "description": "List of open orders for the account, up to 20 per page. Only orders in an open status (`active`, `pending`, `cancelling`, `modifying`) are returned.",
+            "items": {
+              "$ref": "#/components/schemas/order"
+            }
+          },
+          "last": {
+            "$ref": "#/components/schemas/last"
+          }
+        },
+        "required": [
+          "openOrders"
+        ]
+      },
+      "completedOrdersResponse": {
+        "type": "object",
+        "properties": {
+          "completedOrders": {
+            "type": "array",
+            "description": "List of completed (filled) orders for the account, newest first, across all markets.",
+            "items": {
+              "$ref": "#/components/schemas/completedOrder"
+            }
+          },
+          "last": {
+            "$ref": "#/components/schemas/last"
+          }
+        },
+        "required": [
+          "completedOrders"
+        ]
+      },
+      "completedOrder": {
+        "type": "object",
+        "properties": {
+          "market": {
+            "type": "string",
+            "description": "Market name. Example value: `ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint."
+          },
+          "matchId": {
+            "type": "string",
+            "description": "Unique identifier for the trade match."
+          },
+          "orderId": {
+            "type": "string",
+            "description": "Unique identifier for the order."
+          },
+          "orderType": {
+            "type": "string",
+            "enum": ["buy", "sell"],
+            "description": "Order side."
+          },
+          "executionType": {
+            "type": "string",
+            "enum": ["taker", "maker"],
+            "description": "Order execution role."
+          },
+          "fillType": {
+            "type": "string",
+            "enum": ["complete", "partial"],
+            "description": "Fill type."
+          },
+          "price": {
+            "type": "string",
+            "description": "Order fill price."
+          },
+          "quantity": {
+            "type": "string",
+            "description": "Order fill quantity."
+          },
+          "tradeType": {
+            "type": "string",
+            "enum": ["market", "limit"],
+            "description": "Order type."
+          },
+          "fees": {
+            "type": "string",
+            "description": "Fees paid for the order."
+          },
+          "triggerType": {
+            "type": "string",
+            "enum": ["none", "take_profit", "stop_loss", "liquidation"],
+            "description": "Trigger type for the order."
+          },
+          "triggerPrice": {
+            "type": "string",
+            "description": "Trigger price for the order."
+          },
+          "transactionHash": {
+            "type": "string",
+            "description": "Transaction hash for the trade."
+          },
+          "filledAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Order fill timestamp (milliseconds since epoch)."
+          }
+        },
+        "required": [
+          "market",
+          "matchId",
+          "orderId",
+          "orderType",
+          "executionType",
+          "fillType",
+          "price",
+          "quantity",
+          "tradeType",
+          "fees",
+          "triggerType",
+          "triggerPrice",
+          "transactionHash",
+          "filledAt"
+        ]
+      },
+      "last": {
+        "type": "string",
+        "description": "This is a field in the response to support pagination. Use this value if present for the `start` parameter of the following request to get the next page of results."
+      }
+    }
+  }
+}

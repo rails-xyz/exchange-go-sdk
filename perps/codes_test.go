@@ -1,0 +1,67 @@
+package perps_test
+
+import (
+	"github.com/rails-xyz/exchange-go-sdk/perps"
+	"github.com/rails-xyz/exchange-go-sdk/rails"
+)
+
+// Every code this release has a constant for; the spec conformance test checks the spec's
+// examples against it.
+var knownCodes = map[rails.Code]struct{}{
+	rails.CodeUnauthorized:       {},
+	rails.CodeServerError:        {},
+	rails.CodeTooManyRequests:    {},
+	rails.CodeServiceUnavailable: {},
+	rails.CodeRetryableError:     {},
+	rails.CodeBadRequest:         {},
+	rails.CodeNotFound:           {},
+	rails.CodeForbidden:          {},
+	rails.CodeRequestTimeout:     {},
+	rails.CodeDuplicateRequest:   {},
+	rails.CodeSoftBanned:         {},
+	rails.CodeSubscriptionLimit:  {},
+	rails.CodeConnectionLimit:    {},
+	rails.CodeTradingDisabled:    {},
+
+	perps.CodeCreateOrderError:               {},
+	perps.CodeCreateOrderInsufficientBalance: {},
+	perps.CodeCreateOrderInvalidTrade:        {},
+	perps.CodeCreateOrderReceiveWindow:       {},
+	perps.CodeCreateOrderMaxOpenOrders:       {},
+	perps.CodeCreateOrderBanned:              {},
+	perps.CodeCreateOrderReduceOnly:          {},
+	perps.CodeCreateOrderSelfTrade:           {},
+	perps.CodeCreateOrderPriceBand:           {},
+	perps.CodeCreateOrderConflict:            {},
+	perps.CodeCancelOrderError:               {},
+	perps.CodeCancelOrderConflictError:       {},
+	perps.CodeCancelOrderAlreadyCancelling:   {},
+	perps.CodeCancelOrderNotCancellable:      {},
+	perps.CodeModifyOrderError:               {},
+	perps.CodeModifyOrderInsufficientBalance: {},
+	perps.CodeModifyOrderInvalidTrade:        {},
+	perps.CodeModifyOrderNotFoundError:       {},
+	perps.CodeModifyOrderConflictError:       {},
+	perps.CodeModifyOrderNotActive:           {},
+	perps.CodeModifyOrderReceiveWindow:       {},
+	perps.CodeModifyOrderMaxOpenOrders:       {},
+	perps.CodeModifyOrderReduceOnly:          {},
+	perps.CodeModifyOrderWouldMatch:          {},
+	perps.CodePartialFillOrderError:          {},
+	perps.CodeModifyOrderStateChanged:        {},
+	perps.CodeModifyOrderSelfTrade:           {},
+	perps.CodeModifyOrderPriceBand:           {},
+	perps.CodeCompleteFillOrderError:         {},
+	perps.CodeOrderRejected:                  {},
+	perps.CodeOrderRejectedPostOnly:          {},
+	perps.CodeUpdateLeverageError:            {},
+	perps.CodeUpdateLeverageAlreadySet:       {},
+	perps.CodeUpdateLeverageNotAllowed:       {},
+	perps.CodeUpdateMarginError:              {},
+	perps.CodeUpdateMarginNoPosition:         {},
+	perps.CodeUpdateMarginNotIsolated:        {},
+	perps.CodeUpdateMarginExceedsAvailable:   {},
+	perps.CodeUpdateMarginBelowMinimum:       {},
+	perps.CodeUpdateMarginConflict:           {},
+	perps.CodeUpdateMarginModeMarketInUse:    {},
+}

@@ -1,0 +1,4 @@
+package: optionsaccount
+output: internal/wire/optionsaccount/models.gen.go
+generate:
+  models: true

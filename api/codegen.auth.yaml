@@ -1,0 +1,4 @@
+package: auth
+output: internal/wire/auth/models.gen.go
+generate:
+  models: true

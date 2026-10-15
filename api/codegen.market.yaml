@@ -1,0 +1,4 @@
+package: market
+output: internal/wire/market/models.gen.go
+generate:
+  models: true

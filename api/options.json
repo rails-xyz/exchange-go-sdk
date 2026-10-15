@@ -1,0 +1,707 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Options API",
+    "version": "1.0.0",
+    "description": "HTTP endpoints for Rails Options. Base URLs vary by environment — see the Environments page. Authorize with the access token obtained from the Auth API."
+  },
+  "servers": [{ "url": "https://api-options.sandbox.rails.xyz" }],
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/v1/contracts/markets/{market}/expirations": {
+      "get": {
+        "summary": "Get Expirations",
+        "operationId": "getOptionsExpirations",
+        "description": "Lists the available expiration dates for an options market.",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "path",
+            "required": true,
+            "description": "Underlying market, e.g. `BTC-USDT`.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Expirations" },
+                "example": {
+                  "market": "BTC-USDT",
+                  "expirations": [
+                    { "expiryDate": "2026-07-03", "expiryType": "WEEKLY", "contractCount": 32, "atmIV": "0.3925", "expectedPriceMove": "3853.10", "indexPrice": "61500.00" },
+                    { "expiryDate": "2026-07-10", "expiryType": "WEEKLY", "contractCount": 28, "atmIV": "0.4050", "expectedPriceMove": "5263.44", "indexPrice": "61500.00" },
+                    { "expiryDate": "2026-07-31", "expiryType": "MONTHLY", "contractCount": 22, "atmIV": "0.4325", "expectedPriceMove": "8502.95", "indexPrice": "61500.00" }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/v1/contracts/markets/{market}/expirations/{expiry}/contracts": {
+      "get": {
+        "summary": "Get Contracts",
+        "operationId": "getOptionsContracts",
+        "description": "Lists the contracts for a given market and expiration date, including mark price, implied volatility, and Greeks.",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "path",
+            "required": true,
+            "description": "Underlying market, e.g. `BTC-USDT`.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "expiry",
+            "in": "path",
+            "required": true,
+            "description": "Expiration date, `YYYY-MM-DD`.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Contracts" },
+                "example": {
+                  "market": "BTC-USDT",
+                  "expiryDate": "2026-07-03",
+                  "contracts": [
+                    {
+                      "contractName": "BTC-3JUL26-60000-C",
+                      "underlying": "BTC-USDT",
+                      "strike": "60000",
+                      "optionType": "C",
+                      "expiryDate": "2026-07-03",
+                      "expiryType": "WEEKLY",
+                      "status": "ACTIVE",
+                      "markPrice": "1677.30",
+                      "bidPrice": "0",
+                      "askPrice": "0",
+                      "markIV": "0.3925",
+                      "bidIV": "0",
+                      "askIV": "0",
+                      "forward": "61665.1057145",
+                      "tickSize": "0.01",
+                      "contractSize": "1",
+                      "settlementType": "CASH",
+                      "delta": "0.9666",
+                      "gamma": "0.00008040",
+                      "vega": "1.7499",
+                      "theta": "-64.49",
+                      "rho": "-0.024469"
+                    },
+                    {
+                      "contractName": "BTC-3JUL26-60000-P",
+                      "underlying": "BTC-USDT",
+                      "strike": "60000",
+                      "optionType": "P",
+                      "expiryDate": "2026-07-03",
+                      "expiryType": "WEEKLY",
+                      "status": "ACTIVE",
+                      "markPrice": "12.19",
+                      "bidPrice": "0",
+                      "askPrice": "0",
+                      "markIV": "0.3925",
+                      "bidIV": "0",
+                      "askIV": "0",
+                      "forward": "61665.1057145",
+                      "tickSize": "0.01",
+                      "contractSize": "1",
+                      "settlementType": "CASH",
+                      "delta": "-0.0334",
+                      "gamma": "0.00008040",
+                      "vega": "1.7499",
+                      "theta": "-64.49",
+                      "rho": "-0.000178"
+                    },
+                    {
+                      "contractName": "BTC-3JUL26-62000-C",
+                      "underlying": "BTC-USDT",
+                      "strike": "62000",
+                      "optionType": "C",
+                      "expiryDate": "2026-07-03",
+                      "expiryType": "WEEKLY",
+                      "status": "ACTIVE",
+                      "markPrice": "149.16",
+                      "bidPrice": "0",
+                      "askPrice": "0",
+                      "markIV": "0.3035",
+                      "bidIV": "0",
+                      "askIV": "0",
+                      "forward": "61665.1057145",
+                      "tickSize": "0.01",
+                      "contractSize": "1",
+                      "settlementType": "CASH",
+                      "delta": "0.3222",
+                      "gamma": "0.00050170",
+                      "vega": "8.4473",
+                      "theta": "-240.74",
+                      "rho": "-0.002176"
+                    },
+                    {
+                      "contractName": "BTC-3JUL26-62000-P",
+                      "underlying": "BTC-USDT",
+                      "strike": "62000",
+                      "optionType": "P",
+                      "expiryDate": "2026-07-03",
+                      "expiryType": "WEEKLY",
+                      "status": "ACTIVE",
+                      "markPrice": "484.05",
+                      "bidPrice": "0",
+                      "askPrice": "0",
+                      "markIV": "0.3035",
+                      "bidIV": "0",
+                      "askIV": "0",
+                      "forward": "61665.1057145",
+                      "tickSize": "0.01",
+                      "contractSize": "1",
+                      "settlementType": "CASH",
+                      "delta": "-0.6778",
+                      "gamma": "0.00050170",
+                      "vega": "8.4473",
+                      "theta": "-240.74",
+                      "rho": "-0.007062"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/v1/account/summary": {
+      "get": {
+        "summary": "Get Account Summary",
+        "operationId": "getOptionsAccountSummary",
+        "description": "Returns the account-wide balance, equity, margin usage, and PnL for options.",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AccountSummary" },
+                "example": {
+                  "availableBalance": "9806.75",
+                  "withdrawableBalance": "9612.50",
+                  "accountBalance": "12500.00",
+                  "marginUsed": "2693.25",
+                  "pnl": "1362.80",
+                  "fees": "142.60",
+                  "volume": "486000.00",
+                  "unrealizedPnl": "312.40",
+                  "totalEquity": "12761.75",
+                  "maintenanceMargin": "1204.18",
+                  "initialMarginRatio": "0.2110",
+                  "maintenanceMarginRatio": "0.0943"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/v1/account/positions": {
+      "get": {
+        "summary": "Get Positions",
+        "operationId": "getOptionsPositions",
+        "description": "Returns your open options positions.",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Positions" },
+                "example": {
+                  "positions": [
+                    {
+                      "contract": "BTC-3JUL26-62000-C",
+                      "side": "long",
+                      "optionType": "C",
+                      "qty": "2",
+                      "value": "240",
+                      "entryPrice": "120",
+                      "markPrice": "149.16",
+                      "markIV": "0.3035",
+                      "underlyingPrice": "61650",
+                      "liqPrice": "--",
+                      "breakEvenPrice": "62120",
+                      "initialMargin": "--",
+                      "realizedPnl": "0",
+                      "unrealizedPnl": "58.32",
+                      "notionalValue": "298.32"
+                    },
+                    {
+                      "contract": "BTC-3JUL26-60000-P",
+                      "side": "short",
+                      "optionType": "P",
+                      "qty": "-3",
+                      "value": "-45",
+                      "entryPrice": "15",
+                      "markPrice": "12.19",
+                      "markIV": "0.3925",
+                      "underlyingPrice": "61650",
+                      "liqPrice": "--",
+                      "breakEvenPrice": "59985",
+                      "initialMargin": "22829.07",
+                      "realizedPnl": "0",
+                      "unrealizedPnl": "8.43",
+                      "notionalValue": "-36.57"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/v1/account/orders": {
+      "get": {
+        "summary": "Get Recent Orders",
+        "operationId": "getOptionsRecentOrders",
+        "description": "Returns one page of your recent options orders, most recent first. Only orders that are no longer working are returned — for orders still resting on the book, use the Open Orders stream.\n\nThe required `status` parameter selects which history to read:\n\n- `status=completed` returns orders that were filled, in whole or in part. Each order carries a `fillType` of `complete` or `partial`.\n- `status=cancelled` returns orders that were cancelled. These carry no `fillType`; check `filledQuantity` to see whether any of the order filled before it was cancelled.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": true,
+            "description": "Which history to read: `completed` for orders that were filled in whole or in part, or `cancelled` for orders that were cancelled. Omitting it, or sending any other value, returns `400`.",
+            "schema": { "type": "string", "enum": ["completed", "cancelled"] }
+          },
+          { "$ref": "#/components/parameters/pageSize" },
+          { "$ref": "#/components/parameters/pageToken" }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecentOrders" },
+                "example": {
+                  "orders": [
+                    {
+                      "orderId": "01J9G4K19776J1CTA8YXA8AA5H",
+                      "contract": "BTC-3JUL26-62000-C",
+                      "side": "buy",
+                      "type": "limit",
+                      "fillType": "complete",
+                      "price": "120",
+                      "quantity": "2",
+                      "filledQuantity": "2",
+                      "avgFillPrice": "110",
+                      "leverage": "0",
+                      "createdAt": 1751284800000,
+                      "updatedAt": 1751284803120,
+                      "fees": "36.9"
+                    },
+                    {
+                      "orderId": "01J9G51ABC7QK2DTB9ZYC9BB6J",
+                      "contract": "BTC-3JUL26-60000-P",
+                      "side": "sell",
+                      "type": "market",
+                      "fillType": "partial",
+                      "price": "15.40",
+                      "quantity": "3",
+                      "filledQuantity": "1",
+                      "avgFillPrice": "15.75",
+                      "leverage": "0",
+                      "createdAt": 1751288400000,
+                      "updatedAt": 1751288460500,
+                      "fees": "1.52375"
+                    }
+                  ],
+                  "nextPageToken": "eyJwSyI6eyJTIjoiQlRDLTNKVUwyNi02MjAwMC1DIn19"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "examples": {
+                  "missingStatus": {
+                    "summary": "status omitted or not recognised",
+                    "value": { "error": { "slug": "BAD_REQUEST", "code": "SYS-0006" }, "message": "status: required, must be one of: completed, cancelled" }
+                  },
+                  "badPageToken": {
+                    "summary": "pageToken is not a valid cursor",
+                    "value": { "error": { "slug": "BAD_REQUEST", "code": "SYS-0006" }, "message": "pageToken: store: invalid page token" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/v1/account/deposits": {
+      "get": {
+        "summary": "Get Account Deposits",
+        "operationId": "getOptionsDeposits",
+        "description": "Returns one page of your account deposits, most recent first.",
+        "parameters": [
+          { "$ref": "#/components/parameters/pageSize" },
+          { "$ref": "#/components/parameters/pageToken" }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Deposits" },
+                "example": {
+                  "deposits": [
+                    {
+                      "type": "OP_DEPOSIT",
+                      "market": "USDT",
+                      "value": "1000",
+                      "refChainTxId": "0x19a89550272fc44a881d5e28a3619eace550b80191ef5a803163f90024d9f702",
+                      "createdAt": 1751284800000
+                    }
+                  ],
+                  "nextPageToken": "eyJzSyI6eyJTIjoiT1BfREVQT1NJVCJ9fQ"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "examples": {
+                  "badPageToken": {
+                    "summary": "pageToken is not a valid cursor",
+                    "value": { "error": { "slug": "BAD_REQUEST", "code": "SYS-0006" }, "message": "pageToken: txfeed: invalid page token" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/v1/account/withdrawals": {
+      "get": {
+        "summary": "Get Account Withdrawals",
+        "operationId": "getOptionsWithdrawals",
+        "description": "Returns one page of your account withdrawals, most recent first. The fee charged for each withdrawal is reported inline via `fees`.",
+        "parameters": [
+          { "$ref": "#/components/parameters/pageSize" },
+          { "$ref": "#/components/parameters/pageToken" }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Withdrawals" },
+                "example": {
+                  "withdrawals": [
+                    {
+                      "type": "OP_WITHDRAW",
+                      "market": "USDT",
+                      "value": "990",
+                      "fees": "10",
+                      "txHash": "0x19a89550272fc44a881d5e28a3619eace550b80191ef5a803163f90024d9f702",
+                      "createdAt": 1751288400000
+                    }
+                  ],
+                  "nextPageToken": "eyJzSyI6eyJTIjoiT1BfV0lUSERSQVcifX0"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "examples": {
+                  "badPageToken": {
+                    "summary": "pageToken is not a valid cursor",
+                    "value": { "error": { "slug": "BAD_REQUEST", "code": "SYS-0006" }, "message": "pageToken: txfeed: invalid page token" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "pageSize": {
+        "name": "pageSize",
+        "in": "query",
+        "required": false,
+        "description": "Items per page. A value above `200` is treated as `200`; a missing, non-integer or non-positive value falls back to the default.",
+        "schema": { "type": "integer", "default": 50, "maximum": 200 }
+      },
+      "pageToken": {
+        "name": "pageToken",
+        "in": "query",
+        "required": false,
+        "description": "Cursor for the next page.",
+        "schema": { "type": "string" }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": { "slug": "UNAUTHORIZED", "code": "SYS-0001" }, "message": "unauthorized" }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "",
+        "headers": {
+          "Retry-After": { "description": "Seconds to wait before retrying.", "required": true, "schema": { "type": "integer" } }
+        },
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/RateLimited" },
+            "example": { "error": { "slug": "TOO_MANY_REQUESTS", "code": "SYS-0003" }, "message": "rate limit exceeded", "key": "options-read-account", "retry_after_seconds": 3, "remaining": 0 }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": { "slug": "SERVER_ERROR", "code": "SYS-0002" }, "message": "internal error" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Expirations": {
+        "type": "object",
+        "properties": {
+          "market": { "type": "string" },
+          "expirations": { "type": "array", "items": { "$ref": "#/components/schemas/Expiration" } }
+        }
+      },
+      "Expiration": {
+        "type": "object",
+        "properties": {
+          "expiryDate": { "type": "string", "description": "Expiry date, `YYYY-MM-DD`." },
+          "expiryType": { "type": "string", "description": "`WEEKLY` or `MONTHLY`." },
+          "contractCount": { "type": "integer", "description": "Number of contracts for this expiry." },
+          "atmIV": { "type": "string", "description": "At-the-money implied volatility for this expiry." },
+          "expectedPriceMove": { "type": "string", "description": "Expected move of the index price by this expiry." },
+          "indexPrice": { "type": "string", "description": "Index price the expected move is measured from." }
+        }
+      },
+      "Contracts": {
+        "type": "object",
+        "properties": {
+          "market": { "type": "string" },
+          "expiryDate": { "type": "string" },
+          "contracts": { "type": "array", "items": { "$ref": "#/components/schemas/Contract" } }
+        }
+      },
+      "AccountSummary": {
+        "type": "object",
+        "properties": {
+          "availableBalance": { "type": "string", "description": "Balance available for new orders." },
+          "withdrawableBalance": { "type": "string", "description": "Balance available to withdraw." },
+          "accountBalance": { "type": "string", "description": "Total account balance." },
+          "marginUsed": { "type": "string", "description": "Margin currently in use — the initial margin locked by open positions and resting orders." },
+          "pnl": { "type": "string", "description": "Cumulative realized PnL." },
+          "fees": { "type": "string", "description": "Cumulative fees." },
+          "volume": { "type": "string", "description": "Cumulative traded volume." },
+          "unrealizedPnl": { "type": "string", "description": "Unrealized PnL across open positions. Reporting only — not a term in `totalEquity`." },
+          "totalEquity": { "type": "string", "description": "Account equity — account balance plus the signed mark value of open positions." },
+          "maintenanceMargin": { "type": "string", "description": "Maintenance margin across open positions." },
+          "initialMarginRatio": { "type": "string", "description": "`marginUsed` as a fraction of total equity; `1` when equity is not positive." },
+          "maintenanceMarginRatio": { "type": "string", "description": "Maintenance margin as a fraction of total equity; `1` when equity is not positive." }
+        }
+      },
+      "Positions": {
+        "type": "object",
+        "properties": {
+          "positions": { "type": "array", "items": { "$ref": "#/components/schemas/Position" } }
+        }
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "contract": { "type": "string", "description": "Contract name." },
+          "side": { "type": "string", "description": "`long` or `short`." },
+          "optionType": { "type": "string", "enum": ["C", "P"], "description": "`C` (call) or `P` (put), matching the contract name." },
+          "qty": { "type": "string", "description": "Signed position quantity — negative for short positions. `side` carries the same direction." },
+          "value": { "type": "string", "description": "Position value at entry, signed (negative for short positions)." },
+          "entryPrice": { "type": "string", "description": "Average entry price." },
+          "markPrice": { "type": "string", "description": "Current mark price." },
+          "markIV": { "type": "string", "description": "Mark implied volatility." },
+          "underlyingPrice": { "type": "string", "description": "Underlying index price." },
+          "liqPrice": { "type": "string", "description": "Always `--`." },
+          "breakEvenPrice": { "type": "string", "description": "Underlying price at expiry where the position's PnL is zero, net of the premium and opening fees." },
+          "initialMargin": { "type": "string", "description": "Initial margin for short positions; `--` for long positions." },
+          "realizedPnl": { "type": "string", "description": "Realized PnL." },
+          "unrealizedPnl": { "type": "string", "description": "Unrealized PnL, signed; `0` when the mark price is unavailable." },
+          "notionalValue": { "type": "string", "description": "Notional value of the position, signed (negative for short positions); `0` when the mark price is unavailable." }
+        }
+      },
+      "RecentOrders": {
+        "type": "object",
+        "properties": {
+          "orders": { "type": "array", "items": { "$ref": "#/components/schemas/RecentOrder" } },
+          "nextPageToken": { "type": "string", "description": "Cursor for the next page. Present only when a further page exists." }
+        }
+      },
+      "RecentOrder": {
+        "type": "object",
+        "properties": {
+          "orderId": { "type": "string", "description": "Order identifier." },
+          "contract": { "type": "string", "description": "Contract name." },
+          "side": { "type": "string", "description": "`buy` or `sell`." },
+          "type": { "type": "string", "description": "Order type: `limit` or `market`." },
+          "fillType": { "type": "string", "enum": ["complete", "partial"], "description": "How much of the order filled: `complete` when `filledQuantity` reached `quantity`, `partial` when it stopped short. Absent under `status=cancelled` — those orders are cancelled by definition, and `filledQuantity` shows whether any of the order filled first." },
+          "price": { "type": "string", "description": "The price the user submitted: the limit price for limit orders, or the requested price for market orders. Under `status=cancelled`, the order's limit price." },
+          "quantity": { "type": "string", "description": "Order quantity." },
+          "filledQuantity": { "type": "string", "description": "Quantity filled." },
+          "avgFillPrice": { "type": "string", "description": "Volume-weighted average fill price; `0` while nothing has filled." },
+          "leverage": { "type": "string", "description": "Leverage — always `0` for options." },
+          "createdAt": { "type": "integer", "format": "int64", "description": "Creation time (ms since epoch)." },
+          "updatedAt": { "type": "integer", "format": "int64", "description": "Last update time (ms since epoch)." },
+          "fees": { "type": "string", "description": "Total fees charged on the order's fills, in USDT. Empty (`\"\"`) under `status=cancelled`." }
+        }
+      },
+      "Deposits": {
+        "type": "object",
+        "properties": {
+          "deposits": { "type": "array", "description": "List of deposit transactions for the account.", "items": { "$ref": "#/components/schemas/Deposit" } },
+          "nextPageToken": { "type": "string", "description": "Cursor for the next page. Present only when a further page exists." }
+        }
+      },
+      "Deposit": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "description": "Type of transaction. Always `OP_DEPOSIT` for deposits." },
+          "market": { "type": "string", "description": "Asset deposited (e.g., 'USDT'). Note: This field is named 'market', but it's an asset symbol, not a trading market." },
+          "value": { "type": "string", "description": "Amount deposited." },
+          "refChainTxId": { "type": "string", "description": "Blockchain transaction hash for the deposit." },
+          "createdAt": { "type": "integer", "format": "int64", "description": "Deposit timestamp (milliseconds since epoch)." }
+        }
+      },
+      "Withdrawals": {
+        "type": "object",
+        "properties": {
+          "withdrawals": { "type": "array", "description": "List of withdrawal transactions for the account.", "items": { "$ref": "#/components/schemas/Withdrawal" } },
+          "nextPageToken": { "type": "string", "description": "Cursor for the next page. Present only when a further page exists." }
+        }
+      },
+      "Withdrawal": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "description": "Type of transaction. Always `OP_WITHDRAW` for withdrawals." },
+          "market": { "type": "string", "description": "Asset withdrawn (e.g., 'USDT'). Note: This field is named 'market', but it's an asset symbol, not a trading market." },
+          "value": { "type": "string", "description": "Amount withdrawn, net of the fee." },
+          "fees": { "type": "string", "description": "Withdrawal fee charged. Always present." },
+          "txHash": { "type": "string", "description": "Hash of the processed withdrawal. Empty until the withdrawal has been processed." },
+          "createdAt": { "type": "integer", "format": "int64", "description": "Withdrawal timestamp (milliseconds since epoch)." }
+        }
+      },
+      "Contract": {
+        "type": "object",
+        "properties": {
+          "contractName": { "type": "string", "description": "Contract name, e.g. `BTC-24JUN26-62000-C`." },
+          "underlying": { "type": "string" },
+          "strike": { "type": "string" },
+          "optionType": { "type": "string", "description": "`C` (call) or `P` (put)." },
+          "expiryDate": { "type": "string" },
+          "expiryType": { "type": "string", "description": "`WEEKLY` or `MONTHLY`." },
+          "status": { "type": "string", "enum": ["ACTIVE"], "description": "Always `ACTIVE`: only tradable contracts are listed." },
+          "markPrice": { "type": "string" },
+          "bidPrice": { "type": "string" },
+          "askPrice": { "type": "string" },
+          "markIV": { "type": "string" },
+          "bidIV": { "type": "string" },
+          "askIV": { "type": "string" },
+          "forward": { "type": "string" },
+          "tickSize": { "type": "string" },
+          "contractSize": { "type": "string" },
+          "settlementType": { "type": "string", "description": "Settlement type, e.g. `CASH`." },
+          "delta": { "type": "string" },
+          "gamma": { "type": "string" },
+          "vega": { "type": "string" },
+          "theta": { "type": "string" },
+          "rho": { "type": "string" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "description": "An object containing error details.",
+            "properties": {
+              "slug": { "type": "string", "description": "A short string identifier for the error type." },
+              "code": { "type": "string", "description": "A string code representing the error." }
+            },
+            "required": ["slug", "code"]
+          },
+          "message": { "type": "string", "description": "A human-readable message describing the error." }
+        },
+        "required": ["error", "message"]
+      },
+      "RateLimited": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Error" },
+          {
+            "type": "object",
+            "properties": {
+              "key": { "type": "string", "description": "The rate-limit budget the request was charged against." },
+              "retry_after_seconds": { "type": "integer", "description": "Seconds to wait before retrying; the same value as the `Retry-After` header." },
+              "remaining": { "type": "number", "format": "double", "description": "Requests left in the budget's current window." }
+            },
+            "required": ["retry_after_seconds", "remaining"]
+          }
+        ]
+      }
+    }
+  }
+}

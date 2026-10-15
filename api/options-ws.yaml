@@ -1,0 +1,3872 @@
+asyncapi: 3.0.0
+info:
+  title: Rails Options WebSocket API
+  version: 1.0.0
+  description: >
+    Real-time option contracts, quotes, order books, trades, positions, and
+    account state, plus order creation and management, for Rails Options.
+    All requests and responses share a common envelope: requests are
+    `{"message": "<requestType>", "content": {...}}`, responses and stream
+    pushes are `{"resultType": "<responseType>", "market"?: "...",
+    "data": {...}}`.
+defaultContentType: application/json
+
+servers:
+  sandbox:
+    host: ws.sandbox.rails.xyz
+    protocol: wss
+    description: >
+      Connect with `product=options`, `market`, and — optionally —
+      `expiration`, `strike`, `type`, and `subscriptions` query parameters,
+      e.g. `wss://ws.sandbox.rails.xyz?product=options&market=BTC-USDT&expiration=24JUN26&strike=62000&type=C`.
+      `market` takes a market (`BTC-USDT`) or `ALL` for every market;
+      `expiration`, `strike`, and `type` narrow it to a single contract. See the
+      [WebSocket overview](/latest/options/websocket-api/overview) for the
+      full contract-filter and subscription rules. An optional `sessionId`
+      (UUID) query parameter enables a
+      [WebSocket Session](/latest/websocket-session) on the Order Management
+      Stream.
+    security:
+      - $ref: '#/components/securitySchemes/wsAuth'
+
+channels:
+  commonRequests:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}"
+    title: Common Requests
+    description: >
+      Requests and responses available on every connection regardless of
+      active subscriptions.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+    messages:
+      pingRequest:
+        $ref: '#/components/messages/PingRequest'
+      pongResponse:
+        $ref: '#/components/messages/PongResponse'
+      subscribeRequest:
+        $ref: '#/components/messages/SubscribeRequest'
+      subscribedResponse:
+        $ref: '#/components/messages/SubscribedResponse'
+      subscribeError:
+        $ref: '#/components/messages/SubscribeError'
+      unsubscribeRequest:
+        $ref: '#/components/messages/UnsubscribeRequest'
+      unsubscribedResponse:
+        $ref: '#/components/messages/UnsubscribedResponse'
+      unsubscribeError:
+        $ref: '#/components/messages/UnsubscribeError'
+      connectionShutdownNotice:
+        $ref: '#/components/messages/ConnectionShutdownNotice'
+
+  orderManagementStream:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}&subscriptions=optionsOrders&sessionId={sessionId}"
+    title: Order Management Stream
+    description: >
+      Active on the `optionsOrders` subscription, which is on by default
+      when you connect (unless the `subscriptions` query parameter replaces
+      it). Create, modify, and cancel orders, and receive fill and
+      liquidation notifications. Supports a
+      [WebSocket Session](/latest/websocket-session) via the connection's
+      `sessionId` query parameter.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+      sessionId:
+        $ref: '#/components/parameters/sessionId'
+    messages:
+      createOrderRequest:
+        $ref: '#/components/messages/CreateOrderRequest'
+      createOrderAck:
+        $ref: '#/components/messages/CreateOrderAck'
+      createOrderConfirmation:
+        $ref: '#/components/messages/CreateOrderConfirmation'
+      createOrderError:
+        $ref: '#/components/messages/CreateOrderError'
+      modifyOrderRequest:
+        $ref: '#/components/messages/ModifyOrderRequest'
+      modifyOrderAck:
+        $ref: '#/components/messages/ModifyOrderAck'
+      modifyOrderConfirmation:
+        $ref: '#/components/messages/ModifyOrderConfirmation'
+      modifyOrderError:
+        $ref: '#/components/messages/ModifyOrderError'
+      cancelOrderRequest:
+        $ref: '#/components/messages/CancelOrderRequest'
+      cancelOrderConfirmation:
+        $ref: '#/components/messages/CancelOrderConfirmation'
+      cancelOrderError:
+        $ref: '#/components/messages/CancelOrderError'
+      cancelAllOrdersRequest:
+        $ref: '#/components/messages/CancelAllOrdersRequest'
+      cancelAllOrdersAck:
+        $ref: '#/components/messages/CancelAllOrdersAck'
+      cancelAllOrdersError:
+        $ref: '#/components/messages/CancelAllOrdersError'
+      completeFillNotification:
+        $ref: '#/components/messages/CompleteFillNotification'
+      partialFillNotification:
+        $ref: '#/components/messages/PartialFillNotification'
+      sessionBackfillNotification:
+        $ref: '#/components/messages/SessionBackfillNotification'
+      liquidationNotification:
+        $ref: '#/components/messages/LiquidationNotification'
+
+  contractsStream:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}&subscriptions=optionsContracts"
+    title: Contracts Stream
+    description: >
+      Available on the `optionsContracts` subscription. Contract
+      definitions with live mark price, implied volatility, and Greeks,
+      scoped by underlying and expiration date.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+    messages:
+      emitOptionsContractsRequest:
+        $ref: '#/components/messages/EmitOptionsContractsRequest'
+      optionsContractsResponse:
+        $ref: '#/components/messages/OptionsContractsResponse'
+      optionsContractUpdate:
+        $ref: '#/components/messages/OptionsContractUpdate'
+
+  quotesStream:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}&subscriptions=optionsQuotes"
+    title: Quotes Stream
+    description: >
+      Available on the `optionsQuotes` subscription. Top-of-book bid/ask
+      prices with implied volatility per contract, scoped by underlying and
+      expiration date.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+    messages:
+      emitOptionsQuotesRequest:
+        $ref: '#/components/messages/EmitOptionsQuotesRequest'
+      optionsQuotesResponse:
+        $ref: '#/components/messages/OptionsQuotesResponse'
+      optionsQuotesDelta:
+        $ref: '#/components/messages/OptionsQuotesDelta'
+
+  publicOrderBookStream:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}&subscriptions=optionsPublicOrderBook"
+    title: Order Book Stream
+    description: >
+      Available on the `optionsPublicOrderBook` subscription. Full order
+      book snapshots and deltas for a single contract, including implied
+      volatility per price level.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+    messages:
+      emitPublicOrderBookRequest:
+        $ref: '#/components/messages/EmitPublicOrderBookRequest'
+      publicOrderBookResponse:
+        $ref: '#/components/messages/PublicOrderBookResponse'
+      publicOrderBookDelta:
+        $ref: '#/components/messages/PublicOrderBookDelta'
+
+  publicTradesStream:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}&subscriptions=optionsPublicTrades"
+    title: Public Trades Stream
+    description: >
+      Available on the `optionsPublicTrades` subscription. Real-time public
+      trade executions for a single contract.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+    messages:
+      emitPublicCompletedOrdersRequest:
+        $ref: '#/components/messages/EmitPublicCompletedOrdersRequest'
+      publicCompletedOrdersResponse:
+        $ref: '#/components/messages/PublicCompletedOrdersResponse'
+      publicCompletedOrdersDelta:
+        $ref: '#/components/messages/PublicCompletedOrdersDelta'
+
+  positionsStream:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}&subscriptions=optionsPositions"
+    title: Positions Stream
+    description: >
+      Available on the `optionsPositions` subscription. Your open option
+      positions with mark price, margin, and PnL.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+    messages:
+      emitOptionsPositionsRequest:
+        $ref: '#/components/messages/EmitOptionsPositionsRequest'
+      optionsPositionsResponse:
+        $ref: '#/components/messages/OptionsPositionsResponse'
+      optionsPositionsDelta:
+        $ref: '#/components/messages/OptionsPositionsDelta'
+
+  openOrdersStream:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}&subscriptions=optionsOpenOrders"
+    title: Open Orders Stream
+    description: Available on the `optionsOpenOrders` subscription. Your open orders and incremental updates.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+    messages:
+      emitOptionsOpenOrdersRequest:
+        $ref: '#/components/messages/EmitOptionsOpenOrdersRequest'
+      optionsOpenOrdersResponse:
+        $ref: '#/components/messages/OptionsOpenOrdersResponse'
+      optionsOpenOrdersDelta:
+        $ref: '#/components/messages/OptionsOpenOrdersDelta'
+
+  recentOrdersStream:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}&subscriptions=optionsRecentOrders"
+    title: Recent Orders Stream
+    description: Available on the `optionsRecentOrders` subscription. Your recent order history.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+    messages:
+      emitOptionsRecentOrdersRequest:
+        $ref: '#/components/messages/EmitOptionsRecentOrdersRequest'
+      optionsRecentOrdersResponse:
+        $ref: '#/components/messages/OptionsRecentOrdersResponse'
+      optionsRecentOrdersDelta:
+        $ref: '#/components/messages/OptionsRecentOrdersDelta'
+
+  accountSummaryStream:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}&subscriptions=optionsAccountSummary"
+    title: Account Summary Stream
+    description: >
+      Available on the `optionsAccountSummary` subscription. Your account
+      balance, margin usage, and PnL. `emitOptionsAccountSummary` returns the
+      current snapshot and does not subscribe you — without the
+      subscription the snapshot never reaches you, and nothing is pushed on
+      its own. The summary is account-wide; the emit takes no `market`, and
+      any contract filter is ignored.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+    messages:
+      emitOptionsAccountSummaryRequest:
+        $ref: '#/components/messages/EmitOptionsAccountSummaryRequest'
+      optionsAccountSummaryResponse:
+        $ref: '#/components/messages/OptionsAccountSummaryResponse'
+
+  settlementsStream:
+    address: "?product=options&market={market}&expiration={expiration}&strike={strike}&type={type}&subscriptions=optionsSettlements"
+    title: Settlements Stream
+    description: Available on the `optionsSettlements` subscription. Settlement results for your positions at expiry.
+    parameters:
+      market:
+        $ref: '#/components/parameters/market'
+      expiration:
+        $ref: '#/components/parameters/expiration'
+      strike:
+        $ref: '#/components/parameters/strike'
+      type:
+        $ref: '#/components/parameters/type'
+    messages:
+      emitOptionsSettlementsRequest:
+        $ref: '#/components/messages/EmitOptionsSettlementsRequest'
+      optionsSettlementsResponse:
+        $ref: '#/components/messages/OptionsSettlementsResponse'
+
+operations:
+  ping:
+    action: receive
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Application-level heartbeat, available with or without a subscription.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/pingRequest'
+  pong:
+    action: send
+    channel:
+      $ref: '#/channels/commonRequests'
+    messages:
+      - $ref: '#/channels/commonRequests/messages/pongResponse'
+  subscribe:
+    action: receive
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Add one or more streams to the current connection, for one market or several.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/subscribeRequest'
+  subscribed:
+    action: send
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Confirmation (200) or error response (400) to `subscribe`.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/subscribedResponse'
+      - $ref: '#/channels/commonRequests/messages/subscribeError'
+  unsubscribe:
+    action: receive
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Remove one or more streams from the current connection, for one market or every market.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/unsubscribeRequest'
+  unsubscribed:
+    action: send
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Confirmation (200) or error response (400) to `unsubscribe`.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/unsubscribedResponse'
+      - $ref: '#/channels/commonRequests/messages/unsubscribeError'
+  connectionShutdown:
+    action: send
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Pushed unprompted when the connection is scheduled to close; reconnect before the deadline it carries.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/connectionShutdownNotice'
+
+  createOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: Create a limit or market order.
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/createOrderRequest'
+  createOrderResult:
+    action: send
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: Acknowledgment (202), confirmation (200), or error response to `createOrder`.
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/createOrderAck'
+      - $ref: '#/channels/orderManagementStream/messages/createOrderConfirmation'
+      - $ref: '#/channels/orderManagementStream/messages/createOrderError'
+
+  modifyOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: Modify the price and/or quantity of an existing order.
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/modifyOrderRequest'
+  modifyOrderResult:
+    action: send
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: Acknowledgment (202), confirmation (200), or error response to `modifyOrder`.
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/modifyOrderAck'
+      - $ref: '#/channels/orderManagementStream/messages/modifyOrderConfirmation'
+      - $ref: '#/channels/orderManagementStream/messages/modifyOrderError'
+
+  cancelOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: Cancel an order by ID.
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/cancelOrderRequest'
+  cancelOrderResult:
+    action: send
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: Confirmation (200) or error response to `cancelOrder`.
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/cancelOrderConfirmation'
+      - $ref: '#/channels/orderManagementStream/messages/cancelOrderError'
+
+  cancelAllOrders:
+    action: receive
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: Cancel every resting order on one contract, or account-wide.
+    description: |
+      One `cancelAllOrders` acknowledgment and one `cancelOrder` result per order swept, in any
+      order, each carrying this request's `clientRequestId`. Also available over
+      HTTP as Cancel All Orders; see
+      [Releasing Capital on Disconnect](/latest/websocket-session#releasing-capital-on-disconnect).
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/cancelAllOrdersRequest'
+  cancelAllOrdersResult:
+    action: send
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: Acknowledgment (202) with the number of cancels dispatched, or error response to `cancelAllOrders`.
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/cancelAllOrdersAck'
+      - $ref: '#/channels/orderManagementStream/messages/cancelAllOrdersError'
+
+  orderFilled:
+    action: send
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: Pushed when an order is completely or partially filled.
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/completeFillNotification'
+      - $ref: '#/channels/orderManagementStream/messages/partialFillNotification'
+
+  sessionBackfill:
+    action: send
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: >
+      Pushed once per connection whenever `sessionId` is supplied. Summarizes
+      any missed order events backfilled since the last delivered position, or
+      reports that none were backfilled.
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/sessionBackfillNotification'
+
+  liquidation:
+    action: send
+    channel:
+      $ref: '#/channels/orderManagementStream'
+    summary: Pushed when your account is liquidated, once for each contract the liquidation acts on.
+    messages:
+      - $ref: '#/channels/orderManagementStream/messages/liquidationNotification'
+
+  emitOptionsContracts:
+    action: receive
+    channel:
+      $ref: '#/channels/contractsStream'
+    summary: Request the full set of contracts for an underlying and expiration date. Requires the `optionsContracts` subscription for the requested underlying, or `ALL`, for the response to reach you.
+    messages:
+      - $ref: '#/channels/contractsStream/messages/emitOptionsContractsRequest'
+  optionsContractsSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/contractsStream'
+    summary: Response to `emitOptionsContracts`.
+    messages:
+      - $ref: '#/channels/contractsStream/messages/optionsContractsResponse'
+  optionsContractUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/contractsStream'
+    summary: Pushed as a contract's price, IV, and Greeks change.
+    messages:
+      - $ref: '#/channels/contractsStream/messages/optionsContractUpdate'
+
+  emitOptionsQuotes:
+    action: receive
+    channel:
+      $ref: '#/channels/quotesStream'
+    summary: Request top-of-book quotes for an underlying and expiration date. Requires the `optionsQuotes` subscription for the requested underlying, or `ALL`, for the response to reach you.
+    messages:
+      - $ref: '#/channels/quotesStream/messages/emitOptionsQuotesRequest'
+  optionsQuotesSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/quotesStream'
+    summary: Response to `emitOptionsQuotes`.
+    messages:
+      - $ref: '#/channels/quotesStream/messages/optionsQuotesResponse'
+  optionsQuotesUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/quotesStream'
+    summary: Pushed whenever the top-of-book changes for a contract.
+    messages:
+      - $ref: '#/channels/quotesStream/messages/optionsQuotesDelta'
+
+  emitPublicOrderBook:
+    action: receive
+    channel:
+      $ref: '#/channels/publicOrderBookStream'
+    summary: Request a full order book snapshot for a contract. Requires the `optionsPublicOrderBook` subscription, with a filter covering the request, for the response to reach you.
+    messages:
+      - $ref: '#/channels/publicOrderBookStream/messages/emitPublicOrderBookRequest'
+  publicOrderBookSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/publicOrderBookStream'
+    summary: Response to `emitPublicOrderBook`.
+    messages:
+      - $ref: '#/channels/publicOrderBookStream/messages/publicOrderBookResponse'
+  publicOrderBookUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/publicOrderBookStream'
+    summary: Pushed whenever the order book changes for the contract.
+    messages:
+      - $ref: '#/channels/publicOrderBookStream/messages/publicOrderBookDelta'
+
+  emitPublicCompletedOrders:
+    action: receive
+    channel:
+      $ref: '#/channels/publicTradesStream'
+    summary: Request a snapshot of recent public trades for a contract. Requires the `optionsPublicTrades` subscription, with a filter covering the request, for the response to reach you.
+    messages:
+      - $ref: '#/channels/publicTradesStream/messages/emitPublicCompletedOrdersRequest'
+  publicTradesSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/publicTradesStream'
+    summary: Response to `emitPublicCompletedOrders`.
+    messages:
+      - $ref: '#/channels/publicTradesStream/messages/publicCompletedOrdersResponse'
+  publicTradesUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/publicTradesStream'
+    summary: Pushed whenever new trades are executed on the contract.
+    messages:
+      - $ref: '#/channels/publicTradesStream/messages/publicCompletedOrdersDelta'
+
+  emitOptionsPositions:
+    action: receive
+    channel:
+      $ref: '#/channels/positionsStream'
+    summary: Request a snapshot of your open positions. Requires the `optionsPositions` subscription, with a filter covering the request, for the response to reach you.
+    messages:
+      - $ref: '#/channels/positionsStream/messages/emitOptionsPositionsRequest'
+  optionsPositionsSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/positionsStream'
+    summary: Response to `emitOptionsPositions`.
+    messages:
+      - $ref: '#/channels/positionsStream/messages/optionsPositionsResponse'
+  optionsPositionsUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/positionsStream'
+    summary: Pushed whenever your positions change.
+    messages:
+      - $ref: '#/channels/positionsStream/messages/optionsPositionsDelta'
+
+  emitOptionsOpenOrders:
+    action: receive
+    channel:
+      $ref: '#/channels/openOrdersStream'
+    summary: Request a snapshot of your open orders. Requires the `optionsOpenOrders` subscription, with a filter covering the request, for the response to reach you.
+    messages:
+      - $ref: '#/channels/openOrdersStream/messages/emitOptionsOpenOrdersRequest'
+  optionsOpenOrdersSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/openOrdersStream'
+    summary: Response to `emitOptionsOpenOrders`.
+    messages:
+      - $ref: '#/channels/openOrdersStream/messages/optionsOpenOrdersResponse'
+  optionsOpenOrdersUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/openOrdersStream'
+    summary: Pushed whenever an order is added to or drops from your open orders.
+    messages:
+      - $ref: '#/channels/openOrdersStream/messages/optionsOpenOrdersDelta'
+
+  emitOptionsRecentOrders:
+    action: receive
+    channel:
+      $ref: '#/channels/recentOrdersStream'
+    summary: Request a snapshot of your recent order history. Requires the `optionsRecentOrders` subscription, with a filter covering the request, for the response to reach you.
+    messages:
+      - $ref: '#/channels/recentOrdersStream/messages/emitOptionsRecentOrdersRequest'
+  optionsRecentOrdersSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/recentOrdersStream'
+    summary: Response to `emitOptionsRecentOrders`.
+    messages:
+      - $ref: '#/channels/recentOrdersStream/messages/optionsRecentOrdersResponse'
+  optionsRecentOrdersUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/recentOrdersStream'
+    summary: Pushed whenever your recent order history changes.
+    messages:
+      - $ref: '#/channels/recentOrdersStream/messages/optionsRecentOrdersDelta'
+
+  emitOptionsAccountSummary:
+    action: receive
+    channel:
+      $ref: '#/channels/accountSummaryStream'
+    summary: Request the current account summary snapshot. Requires the `optionsAccountSummary` subscription for the response to reach you.
+    messages:
+      - $ref: '#/channels/accountSummaryStream/messages/emitOptionsAccountSummaryRequest'
+  optionsAccountSummaryUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/accountSummaryStream'
+    summary: Response to `emitOptionsAccountSummary`. Delivered only while subscribed to `optionsAccountSummary`; nothing is pushed on its own.
+    messages:
+      - $ref: '#/channels/accountSummaryStream/messages/optionsAccountSummaryResponse'
+
+  emitOptionsSettlements:
+    action: receive
+    channel:
+      $ref: '#/channels/settlementsStream'
+    summary: Request a snapshot of your settlement history. Requires the `optionsSettlements` subscription, with a filter covering the request, for the response to reach you.
+    messages:
+      - $ref: '#/channels/settlementsStream/messages/emitOptionsSettlementsRequest'
+  optionsSettlementsSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/settlementsStream'
+    summary: Response to `emitOptionsSettlements`.
+    messages:
+      - $ref: '#/channels/settlementsStream/messages/optionsSettlementsResponse'
+
+components:
+  parameters:
+    market:
+      description: A specific market (e.g. `BTC-USDT`) or `ALL`.
+      default: BTC-USDT
+    expiration:
+      description: "Contract expiration, e.g. `24JUN26`. Requires `market`; omit to match every expiration."
+      default: 24JUN26
+    strike:
+      description: "Strike price, e.g. `62000`. Requires `expiration`; omit to match every strike."
+      default: "62000"
+    type:
+      description: "`C` (call) or `P` (put). Requires `strike`; omit to match both."
+      default: C
+    sessionId:
+      description: >
+        UUID identifying a session. Enables
+        [WebSocket Session](/latest/websocket-session) on this stream. Omit
+        to opt out.
+      default: e4a1c6f0-7b2d-4c8e-9f3a-5d6b8c1e2f4a
+
+  securitySchemes:
+    wsAuth:
+      type: httpApiKey
+      in: header
+      name: Sec-WebSocket-Protocol
+      description: Supply as `authorization#<JWT>` during the WebSocket handshake.
+
+  schemas:
+    ErrorDetail:
+      type: object
+      properties:
+        slug:
+          type: string
+          description: Machine-readable error slug
+        code:
+          type: string
+          description: Error code
+      required: [slug, code]
+
+    Order:
+      type: object
+      description: Omitted entirely from some error responses; when present, all fields below are populated.
+      properties:
+        contract:
+          type: string
+          description: Contract name
+        orderId:
+          type: string
+          description: Unique order identifier
+        orderType:
+          type: string
+          enum: [buy, sell]
+          description: Order side
+        tradeType:
+          type: string
+          enum: [limit, market]
+          description: Order type
+        price:
+          type: string
+          description: Order price
+        quantity:
+          type: string
+          description: Order quantity
+        filledQuantity:
+          type: string
+          description: Quantity filled so far
+        avgFillPrice:
+          type: string
+          description: Volume-weighted average fill price; `0` while nothing has filled
+        leverage:
+          type: string
+          description: Leverage — always `0` for options
+        orderStatus:
+          type: string
+          enum: [pending, open, cancelled, completed, rejected, not_found]
+          description: >
+            `pending` awaiting acceptance; `open` resting on the book;
+            `cancelled` cancelled; `completed` completely filled;
+            `rejected` rejected; `not_found` no such order, on a `404`
+        postOnly:
+          type: boolean
+          description: Maker-only flag
+        createdAt:
+          type: integer
+          format: int64
+          description: Creation time (ms since epoch)
+        updatedAt:
+          type: integer
+          format: int64
+          description: Last update time (ms since epoch)
+        clientRequestId:
+          type: string
+          description: Client-generated UUID for correlation
+      required:
+        - contract
+        - orderId
+        - orderType
+        - tradeType
+        - price
+        - quantity
+        - filledQuantity
+        - avgFillPrice
+        - leverage
+        - orderStatus
+        - postOnly
+        - createdAt
+        - updatedAt
+
+    ContractGreeks:
+      type: object
+      properties:
+        delta:
+          type: string
+          description: Rate of change of the option's price per $1 move in the underlying
+        gamma:
+          type: string
+          description: Rate of change of delta per $1 move in the underlying
+        vega:
+          type: string
+          description: Sensitivity of the option's price to a 1-point change in implied volatility
+        theta:
+          type: string
+          description: Sensitivity of the option's price to the passage of one day
+        rho:
+          type: string
+          description: Sensitivity of the option's price to a 1% change in interest rates
+      required: [delta, gamma, vega, theta, rho]
+
+    ContractSnapshotEntry:
+      type: object
+      properties:
+        contractName:
+          type: string
+          description: Contract name
+        underlying:
+          type: string
+          description: Underlying market paired with its quote currency, e.g. `BTC-USDT` (requests take the bare asset symbol, e.g. `BTC`)
+        strike:
+          type: string
+          description: Strike price
+        optionType:
+          type: string
+          enum: [C, P]
+          description: Call or put
+        expiryDate:
+          type: string
+          description: Expiry date (`YYYY-MM-DD`)
+        markPrice:
+          type: string
+          description: Mark price
+        bidPrice:
+          type: string
+          description: Best bid price
+        askPrice:
+          type: string
+          description: Best ask price
+        bidSize:
+          type: string
+          description: Best bid size
+        askSize:
+          type: string
+          description: Best ask size
+        markIV:
+          type: string
+          description: Mark implied volatility
+        bidIV:
+          type: string
+          description: Implied volatility at the best bid; may be empty when that side has no firm quote
+        askIV:
+          type: string
+          description: Implied volatility at the best ask; may be empty when that side has no firm quote
+        forward:
+          type: string
+          description: Forward price
+        delta:
+          type: string
+          description: Rate of change of the option's price per $1 move in the underlying
+        gamma:
+          type: string
+          description: Rate of change of delta per $1 move in the underlying
+        vega:
+          type: string
+          description: Sensitivity of the option's price to a 1-point change in implied volatility
+        theta:
+          type: string
+          description: Sensitivity of the option's price to the passage of one day
+        rho:
+          type: string
+          description: Sensitivity of the option's price to a 1% change in interest rates
+        openInterest:
+          type: string
+          description: Open interest
+        volume24h:
+          type: string
+          description: 24h traded volume
+      required:
+        - contractName
+        - underlying
+        - strike
+        - optionType
+        - expiryDate
+        - markPrice
+        - bidPrice
+        - askPrice
+        - bidSize
+        - askSize
+        - markIV
+        - bidIV
+        - askIV
+        - forward
+        - delta
+        - gamma
+        - vega
+        - theta
+        - rho
+        - openInterest
+        - volume24h
+
+    ExpiryExpectedMove:
+      type: object
+      properties:
+        expiryDate:
+          type: string
+          description: Expiry date (`YYYY-MM-DD`)
+        underlying:
+          type: string
+          description: Underlying market, e.g. `BTC-USDT`
+        atmIV:
+          type: string
+          description: At-the-money implied volatility for this expiry
+        expectedPriceMove:
+          type: string
+          description: Expected move of the index price by this expiry
+        indexPrice:
+          type: string
+          description: Index price the expected move is measured from
+      required:
+        - expiryDate
+        - underlying
+        - atmIV
+        - expectedPriceMove
+        - indexPrice
+
+    Quote:
+      type: object
+      properties:
+        contract:
+          type: string
+          description: Contract name
+        bestBid:
+          type: string
+          description: Best bid price; omitted if the bid side is empty
+        bestBidQty:
+          type: string
+          description: Best bid size
+        bestBidIV:
+          type: string
+          description: Implied volatility at the best bid
+        bestAsk:
+          type: string
+          description: Best ask price; omitted if the ask side is empty
+        bestAskQty:
+          type: string
+          description: Best ask size
+        bestAskIV:
+          type: string
+          description: Implied volatility at the best ask
+        ts:
+          type: integer
+          format: int64
+          description: Timestamp (ms since epoch)
+      required: [contract, ts]
+
+    OrderBookLevel:
+      type: object
+      properties:
+        orderType:
+          type: string
+          enum: [buy, sell]
+          description: Order side
+        price:
+          type: string
+          description: Price level
+        quantity:
+          type: string
+          description: Size at the price level; `0` in a delta removes the level
+        iv:
+          type: string
+          description: Implied volatility at the level; omitted when the price implies none
+      required: [orderType, price, quantity]
+
+    BestQuote:
+      type: object
+      properties:
+        price:
+          type: string
+          description: Price
+        size:
+          type: string
+          description: Size
+        iv:
+          type: string
+          description: Implied volatility at the price; omitted when the price implies none
+      required: [price, size]
+
+    TradeExecution:
+      type: object
+      properties:
+        executionType:
+          type: string
+          enum: [taker, maker]
+          description: Execution role
+        matchId:
+          type: string
+          description: Identifier for the trade match, shared by the taker and maker entries
+        price:
+          type: string
+          description: Execution price
+        quantity:
+          type: string
+          description: Execution quantity
+        side:
+          type: string
+          enum: [buy, sell]
+          description: Order side
+        updatedAt:
+          type: integer
+          format: int64
+          description: Execution timestamp (ms since epoch)
+      required: [executionType, matchId, price, quantity, side, updatedAt]
+
+    Position:
+      type: object
+      properties:
+        contract:
+          type: string
+          description: Contract name
+        side:
+          type: string
+          enum: [long, short, flat]
+          description: >
+            Position side. `flat` appears only on deltas, when a position
+            closes — remove the position from your book on receiving it;
+            the snapshot omits closed positions entirely
+        optionType:
+          type: string
+          enum: [C, P]
+          description: Option type — `C` (call) or `P` (put), matching the contract name
+        qty:
+          type: string
+          description: >
+            Signed position quantity — negative for a short. `side` carries
+            the same direction
+        value:
+          type: string
+          description: >
+            Position value at entry, signed (negative for a short)
+        fees:
+          type: string
+          description: >
+            Fees actually charged to open the current position. Reducing the
+            position reduces `fees` in the same proportion, so it always
+            covers only the contracts still held; `0` once the position closes
+        entryPrice:
+          type: string
+          description: Average entry price
+        markPrice:
+          type: string
+          description: Current mark price
+        markIV:
+          type: string
+          description: Mark implied volatility
+        underlyingPrice:
+          type: string
+          description: Underlying index price
+        breakEvenPrice:
+          type: string
+          description: Break-even price at expiry, net of premium and opening fees per contract
+        initialMargin:
+          type: string
+          description: Initial margin (short positions; `0` for long)
+        realizedPnl:
+          type: string
+          description: Realized PnL
+        unrealizedPnl:
+          type: string
+          description: Unrealized PnL
+        notionalValue:
+          type: string
+          description: Notional value of the position, signed (negative for short positions); `0` when the mark price is unavailable
+        updatedAt:
+          type: integer
+          format: int64
+          description: Last update (ms since epoch)
+      required:
+        - contract
+        - side
+        - optionType
+        - qty
+        - value
+        - fees
+        - entryPrice
+        - markPrice
+        - markIV
+        - underlyingPrice
+        - breakEvenPrice
+        - initialMargin
+        - realizedPnl
+        - unrealizedPnl
+        - notionalValue
+        - updatedAt
+
+    OpenOrder:
+      type: object
+      properties:
+        orderId:
+          type: string
+          description: Order identifier
+        contract:
+          type: string
+          description: Contract name
+        side:
+          type: string
+          enum: [buy, sell]
+          description: Order side
+        type:
+          type: string
+          enum: [limit, market]
+          description: Order type
+        initiatorType:
+          type: string
+          description: Who created the order, e.g. `user`
+        price:
+          type: string
+          description: Order price
+        quantity:
+          type: string
+          description: Order quantity
+        filledQuantity:
+          type: string
+          description: Quantity filled so far
+        avgFillPrice:
+          type: string
+          description: Volume-weighted average fill price; `0` while nothing has filled
+        leverage:
+          type: string
+          description: Leverage — always `0` for options
+        reduceOnly:
+          type: boolean
+          description: Reduce-only flag
+        postOnly:
+          type: boolean
+          description: Maker-only flag
+        createdAt:
+          type: integer
+          format: int64
+          description: Creation time (ms since epoch)
+        updatedAt:
+          type: integer
+          format: int64
+          description: Last update time (ms since epoch)
+      required:
+        - orderId
+        - contract
+        - side
+        - type
+        - initiatorType
+        - price
+        - quantity
+        - filledQuantity
+        - avgFillPrice
+        - leverage
+        - reduceOnly
+        - postOnly
+        - createdAt
+        - updatedAt
+
+    OpenOrderDeltaEntry:
+      allOf:
+        - $ref: '#/components/schemas/OpenOrder'
+        - type: object
+          properties:
+            kind:
+              type: string
+              enum: [add, drop]
+              description: "`add` for a new open order, `drop` when the order is no longer open (filled or cancelled)"
+          required: [kind]
+
+    RecentOrder:
+      type: object
+      properties:
+        orderId:
+          type: string
+          description: Order identifier
+        contract:
+          type: string
+          description: Contract name
+        side:
+          type: string
+          enum: [buy, sell]
+          description: Order side
+        type:
+          type: string
+          enum: [limit, market]
+          description: Order type
+        fillType:
+          type: string
+          enum: [complete, partial]
+          description: >
+            How much of the order filled — `complete` when `filledQuantity`
+            reached `quantity`, `partial` when it stopped short. Absent on
+            cancelled orders, which are cancelled by definition
+        price:
+          type: string
+          description: The price the user submitted — the limit price for limit orders, or the requested price for market orders
+        quantity:
+          type: string
+          description: Order quantity
+        filledQuantity:
+          type: string
+          description: Quantity filled
+        avgFillPrice:
+          type: string
+          description: Volume-weighted average fill price; `0` while nothing has filled
+        leverage:
+          type: string
+          description: Leverage — always `0` for options
+        createdAt:
+          type: integer
+          format: int64
+          description: Creation time (ms since epoch)
+        updatedAt:
+          type: integer
+          format: int64
+          description: Last update time (ms since epoch)
+      required:
+        - orderId
+        - contract
+        - side
+        - type
+        - price
+        - quantity
+        - filledQuantity
+        - avgFillPrice
+        - leverage
+        - createdAt
+        - updatedAt
+
+    Settlement:
+      type: object
+      properties:
+        contract:
+          type: string
+          description: Contract name
+        side:
+          type: string
+          enum: [long, short]
+          description: Position side
+        optionType:
+          type: string
+          enum: [C, P]
+          description: Option type — `C` (call) or `P` (put), matching the contract name
+        qty:
+          type: string
+          description: Settled quantity
+        value:
+          type: string
+          description: Position value
+        entryPrice:
+          type: string
+          description: Average entry price
+        markPrice:
+          type: string
+          description: Mark price at settlement
+        underlyingPrice:
+          type: string
+          description: Underlying price at settlement
+        breakEvenPrice:
+          type: string
+          description: Break-even price
+        settlementPrice:
+          type: string
+          description: Settlement price of the underlying
+        payoff:
+          type: string
+          description: Payoff at settlement
+        deliveryFee:
+          type: string
+          description: Delivery fee charged at settlement
+        realizedPnl:
+          type: string
+          description: Realized PnL from settlement
+        settledAt:
+          type: integer
+          format: int64
+          description: Settlement time (ms since epoch)
+      required:
+        - contract
+        - side
+        - optionType
+        - qty
+        - value
+        - entryPrice
+        - markPrice
+        - underlyingPrice
+        - breakEvenPrice
+        - settlementPrice
+        - payoff
+        - deliveryFee
+        - realizedPnl
+        - settledAt
+
+  messages:
+    PingRequest:
+      name: ping
+      title: Ping
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `ping`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+        required: [message]
+      examples:
+        - payload:
+            message: ping
+            content:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+
+    PongResponse:
+      name: pong
+      title: Pong
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `pong`.
+          data:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [statusCode]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: pong
+            data:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+              statusCode: 200
+
+    SubscribeRequest:
+      name: subscribe
+      title: Subscribe
+      summary: Add one or more streams to the current connection, for one or more markets.
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `subscribe`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              subscriptions:
+                type: array
+                description: One or more subscriptions to add
+                items:
+                  type: string
+                  enum:
+                    - optionsOrders
+                    - optionsContracts
+                    - optionsQuotes
+                    - optionsPublicOrderBook
+                    - optionsPublicTrades
+                    - optionsPositions
+                    - optionsOpenOrders
+                    - optionsRecentOrders
+                    - optionsSettlements
+                    - optionsAccountSummary
+              market:
+                type: string
+                description: >
+                  A market, e.g. `BTC-USDT`, or `ALL` for every market.
+                  Always a single string, never an array — send one
+                  `subscribe` per market to follow several. Composes with
+                  `expiration`, `strike`, and `type` into a contract filter
+                  exactly as on the connection URL (a packed contract name
+                  is rejected). Omitting all four applies the connection's
+                  own filter. Defaults to the connection's market
+              expiration:
+                type: string
+                description: Contract expiration, e.g. `24JUN26`. Requires `market`
+              strike:
+                type: string
+                description: Strike price, e.g. `62000`. Requires `expiration`
+              type:
+                type: string
+                enum: [C, P]
+                description: "`C` (call) or `P` (put). Requires `strike`"
+            required: [subscriptions]
+        required: [message, content]
+      examples:
+        - payload:
+            message: subscribe
+            content:
+              clientRequestId: cfff0f58-8780-4cf2-b3d3-6439fed37304
+              subscriptions: [optionsPositions, optionsOpenOrders, optionsPublicOrderBook]
+              market: BTC-USDT
+              expiration: 24JUN26
+              strike: "62000"
+              type: C
+
+    SubscribedResponse:
+      name: subscribed
+      title: Subscribed
+      summary: Success response to `subscribe`. Subscription lists are flat stream names; track markets client-side.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `subscribed`.
+          data:
+            type: object
+            properties:
+              activeSubscriptions:
+                type: array
+                description: >
+                  All currently active subscriptions after the operation. A
+                  flat list of stream names carrying no market information
+                items:
+                  type: string
+              requestedSubscriptions:
+                type: array
+                description: The specific subscriptions that were requested to be added
+                items:
+                  type: string
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [activeSubscriptions, requestedSubscriptions, statusCode]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: subscribed
+            data:
+              activeSubscriptions: [optionsOrders, optionsPositions, optionsOpenOrders, optionsPublicOrderBook]
+              requestedSubscriptions: [optionsPositions, optionsOpenOrders, optionsPublicOrderBook]
+              clientRequestId: cfff0f58-8780-4cf2-b3d3-6439fed37304
+              statusCode: 200
+
+    SubscribeError:
+      name: subscribeError
+      title: Subscribe — Error
+      summary: >
+        Error response to `subscribe`; nothing is subscribed. Note
+        `resultType` is `subscribe` on failure, not `subscribed`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `subscribe`.
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: "`400`, or `429` when the subscription limit is reached."
+              body:
+                type: string
+                description: >
+                  The reason, such as `invalid_subscriptions`, or
+                  `Subscription limit reached (max N)` on a `429`
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, data]
+      examples:
+        - name: WrongProduct
+          payload:
+            resultType: subscribe
+            data:
+              statusCode: 400
+              body: wrong_product_subscriptions
+              error:
+                slug: BAD_REQUEST
+                code: "SYS-0006"
+              clientRequestId: cfff0f58-8780-4cf2-b3d3-6439fed37304
+        - name: SubscriptionLimit
+          payload:
+            resultType: subscribe
+            data:
+              statusCode: 429
+              body: Subscription limit reached (max 100)
+              error:
+                slug: SUBSCRIPTION_LIMIT
+                code: "SYS-0012"
+              clientRequestId: cfff0f58-8780-4cf2-b3d3-6439fed37304
+
+    UnsubscribeRequest:
+      name: unsubscribe
+      title: Unsubscribe
+      summary: Remove one or more streams from the current connection, for one market or all.
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `unsubscribe`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              subscriptions:
+                type: array
+                description: One or more subscriptions to remove
+                items:
+                  type: string
+                  enum:
+                    - optionsOrders
+                    - optionsContracts
+                    - optionsQuotes
+                    - optionsPublicOrderBook
+                    - optionsPublicTrades
+                    - optionsPositions
+                    - optionsOpenOrders
+                    - optionsRecentOrders
+                    - optionsSettlements
+                    - optionsAccountSummary
+              market:
+                type: string
+                description: >
+                  A market, e.g. `BTC-USDT`. Omitting it, or sending `ALL`,
+                  removes the listed streams from **every market they are
+                  active on** — unlike `subscribe`, it does not fall back to
+                  the connection's own market. Composes with `expiration`,
+                  `strike`, and `type` into a contract filter exactly as on
+                  the connection URL
+              expiration:
+                type: string
+                description: Contract expiration, e.g. `24JUN26`. Requires `market`
+              strike:
+                type: string
+                description: Strike price, e.g. `62000`. Requires `expiration`
+              type:
+                type: string
+                enum: [C, P]
+                description: "`C` (call) or `P` (put). Requires `strike`"
+            required: [subscriptions]
+        required: [message, content]
+      examples:
+        - payload:
+            message: unsubscribe
+            content:
+              clientRequestId: b21f0f58-8780-4cf2-b3d3-6439fed37304
+              subscriptions: [optionsPublicOrderBook]
+              market: BTC-USDT
+              expiration: 24JUN26
+              strike: "62000"
+              type: C
+
+    UnsubscribedResponse:
+      name: unsubscribed
+      title: Unsubscribed
+      summary: Success response to `unsubscribe`. Subscription lists are flat stream names; track markets client-side.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `unsubscribed`.
+          data:
+            type: object
+            properties:
+              activeSubscriptions:
+                type: array
+                description: >
+                  All currently active subscriptions after the operation. A
+                  flat list of stream names carrying no market information
+                items:
+                  type: string
+              requestedUnsubscriptions:
+                type: array
+                description: The specific subscriptions that were requested to be removed
+                items:
+                  type: string
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [activeSubscriptions, requestedUnsubscriptions, statusCode]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: unsubscribed
+            data:
+              activeSubscriptions: [optionsOrders, optionsPositions, optionsOpenOrders]
+              requestedUnsubscriptions: [optionsPublicOrderBook]
+              clientRequestId: b21f0f58-8780-4cf2-b3d3-6439fed37304
+              statusCode: 200
+
+    UnsubscribeError:
+      name: unsubscribeError
+      title: Unsubscribe — Error
+      summary: >
+        Error response to `unsubscribe`; nothing is unsubscribed. Note
+        `resultType` is `unsubscribe` on failure, not `unsubscribed`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `unsubscribe`.
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `400`.
+              body:
+                type: string
+                description: The reason, such as `no matching subscription`
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: unsubscribe
+            data:
+              statusCode: 400
+              body: no matching subscription
+              error:
+                slug: BAD_REQUEST
+                code: "SYS-0006"
+              clientRequestId: b21f0f58-8780-4cf2-b3d3-6439fed37304
+
+    ConnectionShutdownNotice:
+      name: connectionShutdown
+      title: Connection Shutdown
+      summary: Pushed before the connection is closed, carrying the deadline by which it must be re-established.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `connectionShutdown`.
+          data:
+            type: object
+            properties:
+              forceCloseInMs:
+                type: integer
+                description: Milliseconds from this message until the connection is closed.
+              statusCode:
+                type: integer
+                description: Always `200`.
+              ts:
+                type: integer
+                format: int64
+                description: When this notice was sent, in epoch milliseconds.
+            required: [forceCloseInMs, statusCode, ts]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: connectionShutdown
+            data:
+              forceCloseInMs: 60000
+              statusCode: 200
+              ts: 1785258083038
+
+    CreateOrderRequest:
+      name: createOrder
+      title: Create Order
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `createOrder`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Contract name; required unless the connection is scoped to one contract
+              price:
+                type: string
+                description: Limit price; for market orders, the expected price
+              quantity:
+                type: string
+                description: Order quantity
+              orderType:
+                type: string
+                enum: [buy, sell]
+                description: Order side
+              tradeType:
+                type: string
+                enum: [limit, market]
+                description: Order type
+              postOnly:
+                type: boolean
+                description: Maker-only flag; limit orders only
+              reduceOnly:
+                type: boolean
+                description: Restrict the order to reducing an existing position
+              maxSlippage:
+                type: string
+                description: Market orders only; `0 - 1` inclusive. `0` behaves as IOC
+              orderId:
+                type: string
+                description: Unique identifier for the order, a ULID. Generated if omitted.
+            required: [price, quantity, orderType, tradeType]
+        required: [message, content]
+      examples:
+        - name: LimitOrder
+          payload:
+            message: createOrder
+            content:
+              clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+              orderId: 01M3STNFPN53F1JWX1B7R023WV
+              market: BTC-3JUL26-55000-C
+              price: "6400"
+              quantity: "1"
+              orderType: buy
+              tradeType: limit
+              postOnly: false
+        - name: MarketOrder
+          payload:
+            message: createOrder
+            content:
+              clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+              market: BTC-3JUL26-55000-C
+              price: "6400"
+              quantity: "1"
+              orderType: buy
+              tradeType: market
+              maxSlippage: "0.02"
+
+    CreateOrderAck:
+      name: createOrderAck
+      title: Create Order — Acknowledgment
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `createOrder`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `202`.
+              body:
+                type: string
+                description: Always `order received`.
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: createOrder
+            market: BTC-3JUL26-55000-C
+            data:
+              statusCode: 202
+              body: order received
+              order:
+                contract: BTC-3JUL26-55000-C
+                orderId: 01KWK47RT6A4DD1TCQE662QJ3W
+                orderType: buy
+                tradeType: limit
+                price: "6400"
+                quantity: "1"
+                filledQuantity: "0"
+                avgFillPrice: "0"
+                leverage: "0"
+                orderStatus: pending
+                postOnly: false
+                createdAt: 1783053411143
+                updatedAt: 1783053411171
+                clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+              clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+
+    CreateOrderConfirmation:
+      name: createOrderConfirmation
+      title: Create Order — Confirmation
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `createOrder`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Always `order placed`.
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: createOrder
+            market: BTC-3JUL26-55000-C
+            data:
+              statusCode: 200
+              body: order placed
+              order:
+                contract: BTC-3JUL26-55000-C
+                orderId: 01KWK47RT6A4DD1TCQE662QJ3W
+                orderType: buy
+                tradeType: limit
+                price: "6400"
+                quantity: "1"
+                filledQuantity: "0"
+                avgFillPrice: "0"
+                leverage: "0"
+                orderStatus: open
+                postOnly: false
+                createdAt: 1783053411143
+                updatedAt: 1783053411174
+                clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+              clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+
+    CreateOrderError:
+      name: createOrderError
+      title: Create Order — Error
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `createOrder`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Error status, e.g. `400`
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, market, data]
+      examples:
+        - name: SelfTrade
+          payload:
+            resultType: createOrder
+            market: BTC-3JUL26-55000-C
+            data:
+              statusCode: 400
+              body: self trade not allowed
+              order:
+                contract: BTC-3JUL26-55000-C
+                orderId: 01KWMXCQCSQC1MN9NJ30TYZPKJ
+                orderType: sell
+                tradeType: limit
+                price: "6700"
+                quantity: "1"
+                filledQuantity: "0"
+                avgFillPrice: "0"
+                leverage: "0"
+                orderStatus: rejected
+                postOnly: true
+                createdAt: 1783113342363
+                updatedAt: 1783113342365
+                clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+              error:
+                code: "OPT-0104"
+                slug: CREATE_ORDER_SELF_TRADE
+              clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+
+    ModifyOrderRequest:
+      name: modifyOrder
+      title: Modify Order
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `modifyOrder`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Contract name; required unless the connection is scoped to one contract
+              orderId:
+                type: string
+                description: Unique identifier for the original order
+              price:
+                type: string
+                description: New order price
+              quantity:
+                type: string
+                description: New order quantity
+            required: [orderId, price, quantity]
+        required: [message, content]
+      examples:
+        - payload:
+            message: modifyOrder
+            content:
+              clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
+              market: BTC-3JUL26-55000-C
+              orderId: 01KWK47RT6A4DD1TCQE662QJ3W
+              price: "6300"
+              quantity: "1"
+
+    ModifyOrderAck:
+      name: modifyOrderAck
+      title: Modify Order — Acknowledgment
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `modifyOrder`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `202`.
+              body:
+                type: string
+                description: Always `order received`.
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: modifyOrder
+            market: BTC-3JUL26-55000-C
+            data:
+              statusCode: 202
+              body: order received
+              order:
+                contract: BTC-3JUL26-55000-C
+                orderId: 01KWK47RT6A4DD1TCQE662QJ3W
+                orderType: buy
+                tradeType: limit
+                price: "6300"
+                quantity: "1"
+                filledQuantity: "0"
+                avgFillPrice: "0"
+                leverage: "0"
+                orderStatus: pending
+                postOnly: false
+                createdAt: 1783053411143
+                updatedAt: 1783053548624
+                clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
+              clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
+
+    ModifyOrderConfirmation:
+      name: modifyOrderConfirmation
+      title: Modify Order — Confirmation
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `modifyOrder`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Always `order placed`.
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: modifyOrder
+            market: BTC-3JUL26-55000-C
+            data:
+              statusCode: 200
+              body: order placed
+              order:
+                contract: BTC-3JUL26-55000-C
+                orderId: 01KWK47RT6A4DD1TCQE662QJ3W
+                orderType: buy
+                tradeType: limit
+                price: "6300"
+                quantity: "1"
+                filledQuantity: "0"
+                avgFillPrice: "0"
+                leverage: "0"
+                orderStatus: open
+                postOnly: false
+                createdAt: 1783053411143
+                updatedAt: 1783053548626
+                clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
+              clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
+
+    ModifyOrderError:
+      name: modifyOrderError
+      title: Modify Order — Error
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `modifyOrder`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Error status, e.g. `404`
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, market, data]
+      examples:
+        - name: NotFound
+          payload:
+            resultType: modifyOrder
+            market: BTC-3JUL26-55000-C
+            data:
+              statusCode: 404
+              body: order not found
+              error:
+                code: "OPT-0004"
+                slug: ORDER_NOT_FOUND
+              clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
+
+    CancelOrderRequest:
+      name: cancelOrder
+      title: Cancel Order By ID
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `cancelOrder`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Contract name; required unless the connection is scoped to one contract
+              orderId:
+                type: string
+                description: Target order identifier
+              cancelBy:
+                type: string
+                description: Cancellation mode; currently `orderId`
+            required: [orderId, cancelBy]
+        required: [message, content]
+      examples:
+        - payload:
+            message: cancelOrder
+            content:
+              clientRequestId: b56692f8-4322-411d-846f-268c01cd4fa9
+              market: BTC-3JUL26-55000-C
+              cancelBy: orderId
+              orderId: 01KWK47RT6A4DD1TCQE662QJ3W
+
+    CancelOrderConfirmation:
+      name: cancelOrderConfirmation
+      title: Cancel Order — Confirmation
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `cancelOrder`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Always `order cancelled`.
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: cancelOrder
+            market: BTC-3JUL26-55000-C
+            data:
+              statusCode: 200
+              body: order cancelled
+              order:
+                contract: BTC-3JUL26-55000-C
+                orderId: 01KWK47RT6A4DD1TCQE662QJ3W
+                orderType: buy
+                tradeType: limit
+                price: "6300"
+                quantity: "1"
+                filledQuantity: "0"
+                avgFillPrice: "0"
+                leverage: "0"
+                orderStatus: cancelled
+                postOnly: false
+                createdAt: 1783053411143
+                updatedAt: 1783053687411
+                clientRequestId: b56692f8-4322-411d-846f-268c01cd4fa9
+              clientRequestId: b56692f8-4322-411d-846f-268c01cd4fa9
+
+    CancelOrderError:
+      name: cancelOrderError
+      title: Cancel Order — Error
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `cancelOrder`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Error status, e.g. `404`
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, market, data]
+      examples:
+        - name: NotFound
+          payload:
+            resultType: cancelOrder
+            market: BTC-3JUL26-55000-C
+            data:
+              statusCode: 404
+              body: order not found
+              error:
+                code: "OPT-0004"
+                slug: ORDER_NOT_FOUND
+              clientRequestId: b56692f8-4322-411d-846f-268c01cd4fa9
+
+    CancelAllOrdersRequest:
+      name: cancelAllOrders
+      title: Cancel All Orders
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `cancelAllOrders`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: >-
+                  Client-generated UUID for correlation. Echoed on the acknowledgment and on every
+                  per-order `cancelOrder` result the sweep produces.
+              market:
+                type: string
+                description: >-
+                  Contract to sweep. Defaults to the connection's market; a partial market
+                  (`BTC`, `BTC-27MAR26`, `BTC-27MAR26-55000`) sweeps every contract under it. On a
+                  `market=ALL` connection, omit it to sweep every contract, or name one to narrow.
+        required: [message]
+      examples:
+        - name: OneContract
+          payload:
+            message: cancelAllOrders
+            content:
+              clientRequestId: 5d2a7f0e-1c3b-4e8a-9f61-2b7c4d9e0a13
+              market: BTC-3JUL26-55000-C
+        - name: AccountWide
+          summary: On a `market=ALL` connection, no market sweeps every contract.
+          payload:
+            message: cancelAllOrders
+            content:
+              clientRequestId: 9c1e4b7a-6d2f-4a35-b8e0-7f3a1c5d2e94
+
+    CancelAllOrdersAck:
+      name: cancelAllOrdersAck
+      title: Cancel All Orders — Acknowledgment
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `cancelAllOrders`.
+          market:
+            type: string
+            description: Contract name, or `ALL` for an account-wide sweep.
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `202`.
+              body:
+                type: string
+                description: Always `cancel all received`.
+              count:
+                type: integer
+                description: Number of cancels dispatched. `0` when nothing was resting.
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, count]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: cancelAllOrders
+            market: ALL
+            data:
+              statusCode: 202
+              body: cancel all received
+              count: 3
+              clientRequestId: 9c1e4b7a-6d2f-4a35-b8e0-7f3a1c5d2e94
+
+    CancelAllOrdersError:
+      name: cancelAllOrdersError
+      title: Cancel All Orders — Error
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `cancelAllOrders`.
+          market:
+            type: string
+            description: Contract name, or `ALL` for an account-wide sweep.
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Error status, e.g. `400`
+              body:
+                type: string
+                description: Status message
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, market, data]
+      examples:
+        - name: ReceiveWindowExceeded
+          payload:
+            resultType: cancelAllOrders
+            market: ALL
+            data:
+              statusCode: 400
+              body: request arrived too late
+              error:
+                code: "OPT-0005"
+                slug: RECEIVE_WINDOW_EXCEEDED
+              clientRequestId: 9c1e4b7a-6d2f-4a35-b8e0-7f3a1c5d2e94
+
+    CompleteFillNotification:
+      name: completeFillOrder
+      title: Order Filled — Complete Fill
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `completeFillOrder`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: completeFillOrder
+            market: BTC-10JUL26-55000-C
+            data:
+              statusCode: 200
+              body: order filled
+              order:
+                contract: BTC-10JUL26-55000-C
+                orderId: 01KWVNC7T8XWVHGKY00A9TD0YG
+                orderType: buy
+                tradeType: market
+                price: "7029.8"
+                quantity: "1"
+                filledQuantity: "1"
+                avgFillPrice: "7029.8"
+                leverage: "0"
+                orderStatus: completed
+                postOnly: false
+                createdAt: 1783339818825
+                updatedAt: 1783339818882
+                clientRequestId: a9716fab-8ac2-47fd-803e-44e2ca22b948
+              clientRequestId: a9716fab-8ac2-47fd-803e-44e2ca22b948
+
+    PartialFillNotification:
+      name: partialFillOrder
+      title: Order Filled — Partial Fill
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `partialFillOrder`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: partialFillOrder
+            market: BTC-10JUL26-55000-C
+            data:
+              statusCode: 200
+              body: order partially filled
+              order:
+                contract: BTC-10JUL26-55000-C
+                orderId: 01KWVN9WSB5H7ZQK2P3M4NR8XA
+                orderType: buy
+                tradeType: limit
+                price: "7000"
+                quantity: "2"
+                filledQuantity: "1"
+                avgFillPrice: "7000"
+                leverage: "0"
+                orderStatus: open
+                postOnly: false
+                createdAt: 1783339700000
+                updatedAt: 1783339750000
+                clientRequestId: 3d1f9c02-5a77-4c1e-9b6a-2e8d4f0b1c33
+              clientRequestId: 3d1f9c02-5a77-4c1e-9b6a-2e8d4f0b1c33
+
+    SessionBackfillNotification:
+      name: sessionBackfill
+      title: Session Backfill
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `sessionBackfill`.
+          data:
+            type: object
+            properties:
+              sessionId:
+                type: string
+                description: Echoes the `sessionId` query parameter supplied on the connection.
+              resumed:
+                type: boolean
+                description: >
+                  `true` if this session continues a live position from a
+                  prior connection with the same `sessionId` that reconnected
+                  within the 1-minute backfill window. `false` for a new
+                  `sessionId`, or a reused one outside that window — no
+                  backfill occurs, and local order state must be reconciled
+                  from scratch via HTTP endpoints or `emit` requests.
+              from:
+                type: integer
+                format: int64
+                description: >
+                  Unix timestamp (ms) marking the start of the backfill
+                  window. `0` when `resumed` is `false`.
+              to:
+                type: integer
+                format: int64
+                description: Unix timestamp (ms) marking the end of the backfill window.
+              events:
+                type: integer
+                description: Total number of missed order events backfilled across all contracts.
+              backfilledMarkets:
+                type: array
+                description: Contracts whose missed events were fully backfilled.
+                items:
+                  type: string
+              expiredMarkets:
+                type: array
+                description: Contracts with missed events that were not backfilled
+                items:
+                  type: string
+            required: [sessionId, resumed, from, to, events, backfilledMarkets, expiredMarkets]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: sessionBackfill
+            data:
+              sessionId: e4a1c6f0-7b2d-4c8e-9f3a-5d6b8c1e2f4a
+              resumed: true
+              from: 1784834389615
+              to: 1784834449615
+              events: 6
+              backfilledMarkets: [BTC-3JUL26-55000-C, ETH-31JUL26-1600-C]
+              expiredMarkets: []
+
+    LiquidationNotification:
+      name: liquidation
+      title: Liquidation
+      summary: >
+        Pushed when your account is liquidated, once for each contract the
+        liquidation cancels orders on or closes a position in, before those
+        orders are cancelled and positions closed. Carries no
+        `clientRequestId`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `liquidation`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Always `liquidation triggered`.
+              liquidationId:
+                type: string
+                description: Identifies the liquidation; the same on every `liquidation` message it produces
+              marginRatio:
+                type: string
+                description: >
+                  Maintenance margin as a fraction of total equity when the
+                  liquidation triggered; `1` when equity is not positive
+              usedMargin:
+                type: string
+                description: >
+                  Maintenance margin of your positions plus the margin locked
+                  by your resting orders when the liquidation triggered, in USDT
+              totalEquity:
+                type: string
+                description: Account equity when the liquidation triggered, in USDT
+              triggeredAt:
+                type: integer
+                format: int64
+                description: When the liquidation triggered (ms since epoch)
+            required: [statusCode, body, liquidationId, marginRatio, usedMargin, totalEquity, triggeredAt]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: liquidation
+            market: BTC-10JUL26-60000-P
+            data:
+              statusCode: 200
+              body: liquidation triggered
+              liquidationId: 3f9c2a7e1b4d8c60
+              marginRatio: "0.9934"
+              usedMargin: "20783.55"
+              totalEquity: "20506.29"
+              triggeredAt: 1783352484000
+
+    EmitOptionsContractsRequest:
+      name: emitOptionsContracts
+      title: Emit Options Contracts
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitOptionsContracts`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              underlying:
+                type: string
+                description: Underlying asset (bare symbol, not paired with a quote currency), e.g. `BTC`
+              expirationDate:
+                type: string
+                description: Expiration date, `YYYY-MM-DD`
+              pageSize:
+                type: integer
+                minimum: 1
+                maximum: 200
+                description: Page size, `1`–`200`
+              pageToken:
+                type: string
+                description: The previous response's `nextPageToken`. Omit for the first page
+            required: [underlying, expirationDate]
+        required: [message, content]
+      examples:
+        - payload:
+            message: emitOptionsContracts
+            content:
+              clientRequestId: ec5e9e21-e4dd-47dd-af9b-345b2b3ea976
+              underlying: BTC
+              expirationDate: "2026-07-10"
+
+    OptionsContractsResponse:
+      name: optionsContracts
+      title: Contracts Snapshot
+      summary: Response to `emitOptionsContracts`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsContracts`.
+          market:
+            type: string
+            description: Underlying asset (echoes the request `underlying`)
+          data:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              contracts:
+                type: array
+                description: Contract definitions
+                items:
+                  $ref: '#/components/schemas/ContractSnapshotEntry'
+              expiries:
+                type: array
+                description: Expected price move per expiry
+                items:
+                  $ref: '#/components/schemas/ExpiryExpectedMove'
+              statusCode:
+                type: integer
+                description: Always `200`.
+              nextPageToken:
+                type: string
+                description: Cursor for the next page; absent on the last page
+            required: [contracts, expiries, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: optionsContracts
+            market: BTC
+            data:
+              clientRequestId: ec5e9e21-e4dd-47dd-af9b-345b2b3ea976
+              contracts:
+                - contractName: BTC-10JUL26-63000-C
+                  underlying: BTC-USDT
+                  strike: "63000"
+                  optionType: C
+                  expiryDate: "2026-07-10"
+                  markPrice: "1334.5252004"
+                  bidPrice: "749.89"
+                  askPrice: "751.71"
+                  bidSize: "8"
+                  askSize: "4"
+                  markIV: "0.3899"
+                  bidIV: "0.4178"
+                  askIV: "0.4185"
+                  forward: "63654.9041377805"
+                  delta: "0.6089291"
+                  gamma: "0.0001548"
+                  vega: "2443.5719736"
+                  theta: "-130.4974464"
+                  rho: "-13.346896"
+                  openInterest: "0"
+                  volume24h: "0"
+                - contractName: BTC-10JUL26-63000-P
+                  underlying: BTC-USDT
+                  strike: "63000"
+                  optionType: P
+                  expiryDate: "2026-07-10"
+                  markPrice: "699.9441769"
+                  bidPrice: "1626.58"
+                  askPrice: "1627.55"
+                  bidSize: "4"
+                  askSize: "4"
+                  markIV: "0.3899"
+                  bidIV: "0.5033"
+                  askIV: "0.5037"
+                  forward: "63654.9041377805"
+                  delta: "-0.3910709"
+                  gamma: "0.0001548"
+                  vega: "2443.5719736"
+                  theta: "-130.4974464"
+                  rho: "-7.000304"
+                  openInterest: "2"
+                  volume24h: "0"
+              expiries:
+                - expiryDate: "2026-07-10"
+                  underlying: "BTC-USDT"
+                  atmIV: "0.3899"
+                  expectedPriceMove: "5225.80"
+                  indexPrice: "63450.00"
+              statusCode: 200
+
+    OptionsContractUpdate:
+      name: optionsContractUpdate
+      title: Contract Update
+      summary: Pushed as a contract's price, IV, and Greeks change.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsContractUpdate`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              contractName:
+                type: string
+                description: Contract name
+              underlying:
+                type: string
+                description: Underlying market paired with its quote currency, e.g. `BTC-USDT`
+              strike:
+                type: string
+                description: Strike price
+              optionType:
+                type: string
+                enum: [C, P]
+                description: Call or put
+              expiryDate:
+                type: string
+                description: Expiry date (`YYYY-MM-DD`)
+              markPrice:
+                type: string
+                description: Mark price
+              markIV:
+                type: string
+                description: Mark implied volatility
+              forward:
+                type: string
+                description: Forward price
+              delta:
+                type: string
+                description: Rate of change of the option's price per $1 move in the underlying
+              gamma:
+                type: string
+                description: Rate of change of delta per $1 move in the underlying
+              vega:
+                type: string
+                description: Sensitivity of the option's price to a 1-point change in implied volatility
+              theta:
+                type: string
+                description: Sensitivity of the option's price to the passage of one day
+              rho:
+                type: string
+                description: Sensitivity of the option's price to a 1% change in interest rates
+            required:
+              - contractName
+              - underlying
+              - strike
+              - optionType
+              - expiryDate
+              - markPrice
+              - markIV
+              - forward
+              - delta
+              - gamma
+              - vega
+              - theta
+              - rho
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: optionsContractUpdate
+            market: BTC-10JUL26-55000-C
+            data:
+              contractName: BTC-10JUL26-55000-C
+              underlying: BTC-USDT
+              strike: "55000"
+              optionType: C
+              expiryDate: "2026-07-10"
+              markPrice: "8810.9085883"
+              markIV: "0.6571"
+              forward: "63794.6796692"
+              delta: "0.9889426"
+              gamma: "0.0000069"
+              vega: "185.7490523"
+              theta: "-16.6912762"
+              rho: "-88.2604965"
+
+    EmitOptionsQuotesRequest:
+      name: emitOptionsQuotes
+      title: Emit Options Quotes
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitOptionsQuotes`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              underlying:
+                type: string
+                description: Underlying asset (bare symbol, not paired with a quote currency), e.g. `BTC`
+              expirationDate:
+                type: string
+                description: Expiration date, `YYYY-MM-DD`
+              pageSize:
+                type: integer
+                minimum: 1
+                maximum: 200
+                description: Page size, `1`–`200`
+              pageToken:
+                type: string
+                description: The previous response's `nextPageToken`. Omit for the first page
+            required: [underlying, expirationDate]
+        required: [message, content]
+      examples:
+        - payload:
+            message: emitOptionsQuotes
+            content:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+              underlying: BTC
+              expirationDate: "2026-06-19"
+
+    OptionsQuotesResponse:
+      name: optionsQuotes
+      title: Quotes Snapshot
+      summary: Response to `emitOptionsQuotes`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsQuotes`.
+          data:
+            type: object
+            properties:
+              quotes:
+                type: array
+                description: Top-of-book per contract
+                items:
+                  $ref: '#/components/schemas/Quote'
+              statusCode:
+                type: integer
+                description: Always `200`.
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              nextPageToken:
+                type: string
+                description: Cursor for the next page; absent on the last page
+            required: [quotes, statusCode]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: optionsQuotes
+            data:
+              quotes:
+                - contract: BTC-24JUN26-62000-C
+                  bestBid: "1840.00"
+                  bestBidQty: "5"
+                  bestBidIV: "0.54"
+                  bestAsk: "1861.00"
+                  bestAskQty: "4"
+                  bestAskIV: "0.56"
+                  ts: 1767762810250
+              statusCode: 200
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+
+    OptionsQuotesDelta:
+      name: optionsQuotesDelta
+      title: Quote Delta
+      summary: Pushed whenever the top-of-book changes for a contract.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsQuotesDelta`.
+          data:
+            $ref: '#/components/schemas/Quote'
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: optionsQuotesDelta
+            data:
+              contract: BTC-24JUN26-62000-C
+              bestBid: "1841.00"
+              bestBidQty: "6"
+              bestBidIV: "0.541"
+              bestAsk: "1860.00"
+              bestAskQty: "3"
+              bestAskIV: "0.559"
+              ts: 1767762820000
+
+    EmitPublicOrderBookRequest:
+      name: emitPublicOrderBook
+      title: Emit Public Order Book
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitPublicOrderBook`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Contract name
+            required: [market]
+        required: [message, content]
+      examples:
+        - payload:
+            message: emitPublicOrderBook
+            content:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+              market: BTC-10JUL26-55000-C
+
+    PublicOrderBookResponse:
+      name: publicOrderBook
+      title: Order Book Snapshot
+      summary: Response to `emitPublicOrderBook`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `publicOrderBook`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              orderBook:
+                type: object
+                properties:
+                  contract:
+                    type: string
+                    description: Contract name
+                  orders:
+                    type: array
+                    description: Full order book entries
+                    items:
+                      $ref: '#/components/schemas/OrderBookLevel'
+                  bestBid:
+                    $ref: '#/components/schemas/BestQuote'
+                  bestAsk:
+                    $ref: '#/components/schemas/BestQuote'
+                  ts:
+                    type: integer
+                    format: int64
+                    description: Snapshot timestamp in milliseconds since epoch
+                required: [contract, orders, ts]
+              statusCode:
+                type: integer
+                description: Always `200`.
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [orderBook, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: publicOrderBook
+            market: BTC-10JUL26-55000-C
+            data:
+              orderBook:
+                contract: BTC-10JUL26-55000-C
+                orders:
+                  - orderType: sell
+                    price: "7247.97"
+                    quantity: "4"
+                    iv: "0.5968"
+                  - orderType: buy
+                    price: "7104.44"
+                    quantity: "4"
+                  - orderType: buy
+                    price: "6960.92"
+                    quantity: "16"
+                  - orderType: buy
+                    price: "6700"
+                    quantity: "1"
+                bestBid:
+                  price: "7104.44"
+                  size: "4"
+                bestAsk:
+                  price: "7247.97"
+                  size: "4"
+                  iv: "0.5968"
+                ts: 1783085417173
+              statusCode: 200
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+
+    PublicOrderBookDelta:
+      name: publicOrderBookDelta
+      title: Order Book Delta
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `publicOrderBookDelta`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              orderBook:
+                type: object
+                properties:
+                  contract:
+                    type: string
+                    description: Contract name
+                  orders:
+                    type: array
+                    description: Changed price levels
+                    items:
+                      $ref: '#/components/schemas/OrderBookLevel'
+                  bestBid:
+                    $ref: '#/components/schemas/BestQuote'
+                  bestAsk:
+                    $ref: '#/components/schemas/BestQuote'
+                  ts:
+                    type: integer
+                    format: int64
+                    description: Update timestamp in milliseconds since epoch
+                required: [contract, orders, ts]
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [orderBook, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: publicOrderBookDelta
+            market: BTC-10JUL26-55000-C
+            data:
+              orderBook:
+                contract: BTC-10JUL26-55000-C
+                orders:
+                  - orderType: buy
+                    price: "6700"
+                    quantity: "0"
+                bestBid:
+                  price: "7204.26"
+                  size: "4"
+                bestAsk:
+                  price: "7210.97"
+                  size: "3"
+                ts: 1783351516417
+              statusCode: 200
+
+    EmitPublicCompletedOrdersRequest:
+      name: emitPublicCompletedOrders
+      title: Emit Public Completed Orders
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitPublicCompletedOrders`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Contract name
+              pageSize:
+                type: integer
+                minimum: 1
+                maximum: 200
+                description: Page size, `1`–`200`
+              pageToken:
+                type: string
+                description: The previous response's `nextPageToken`. Omit for the first page
+            required: [market]
+        required: [message, content]
+      examples:
+        - payload:
+            message: emitPublicCompletedOrders
+            content:
+              clientRequestId: f45cf3c8-3f2d-4ace-80de-8cb4da0a63bb
+              market: BTC-10JUL26-55000-C
+
+    PublicCompletedOrdersResponse:
+      name: publicCompletedOrders
+      title: Public Trades Snapshot
+      summary: Response to `emitPublicCompletedOrders`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `publicCompletedOrders`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              trades:
+                type: array
+                description: Snapshot of recent trade executions
+                items:
+                  $ref: '#/components/schemas/TradeExecution'
+              statusCode:
+                type: integer
+                description: Always `200`.
+              nextPageToken:
+                type: string
+                description: Cursor for the next page; absent on the last page
+            required: [trades, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: publicCompletedOrders
+            market: BTC-10JUL26-55000-C
+            data:
+              clientRequestId: f45cf3c8-3f2d-4ace-80de-8cb4da0a63bb
+              trades:
+                - executionType: taker
+                  matchId: 9b8e7bc6-c111-46e7-81f2-04691780c1fd-1
+                  price: "7204.26"
+                  quantity: "1"
+                  side: sell
+                  updatedAt: 1783352484840
+                - executionType: maker
+                  matchId: 9b8e7bc6-c111-46e7-81f2-04691780c1fd-1
+                  price: "7204.26"
+                  quantity: "1"
+                  side: buy
+                  updatedAt: 1783086811956
+                - executionType: taker
+                  matchId: a9716fab-8ac2-47fd-803e-44e2ca22b948-1
+                  price: "7210.97"
+                  quantity: "1"
+                  side: buy
+                  updatedAt: 1783339818825
+                - executionType: maker
+                  matchId: a9716fab-8ac2-47fd-803e-44e2ca22b948-1
+                  price: "7210.97"
+                  quantity: "1"
+                  side: sell
+                  updatedAt: 1783086557575
+              statusCode: 200
+
+    PublicCompletedOrdersDelta:
+      name: publicCompletedOrdersDelta
+      title: Public Trades Delta
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `publicCompletedOrdersDelta`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              trades:
+                type: array
+                description: New trade executions since the last update
+                items:
+                  $ref: '#/components/schemas/TradeExecution'
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [trades, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: publicCompletedOrdersDelta
+            market: BTC-10JUL26-55000-C
+            data:
+              trades:
+                - executionType: taker
+                  matchId: "01KWM432SK16GA5ZV3H6TQSDRC:01KWW1ERZ59PWXTRVP2YSDA2SB"
+                  price: "7204.26"
+                  quantity: "1"
+                  side: sell
+                  updatedAt: 1783352484913
+              statusCode: 200
+
+    EmitOptionsPositionsRequest:
+      name: emitOptionsPositions
+      title: Emit Options Positions
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitOptionsPositions`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: A contract name to filter, or `ALL` for every position. Defaults to `ALL`
+              pageSize:
+                type: integer
+                minimum: 1
+                maximum: 200
+                description: Page size, `1`–`200`. Omit it to receive every position in one message
+              pageToken:
+                type: string
+                description: The previous response's `nextPageToken`. Requires `pageSize`
+        required: [message]
+      examples:
+        - payload:
+            message: emitOptionsPositions
+            content:
+              clientRequestId: b8c56794-c7f8-467d-b331-be8c765a5378
+              market: BTC-10JUL26-55000-C
+
+    OptionsPositionsResponse:
+      name: optionsPositions
+      title: Positions Snapshot
+      summary: Response to `emitOptionsPositions`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsPositions`.
+          market:
+            type: string
+            description: Contract name, or `ALL`
+          data:
+            type: object
+            properties:
+              positions:
+                type: array
+                description: Your open positions
+                items:
+                  $ref: '#/components/schemas/Position'
+              statusCode:
+                type: integer
+                description: Always `200`.
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              nextPageToken:
+                type: string
+                description: >
+                  Cursor for the next page; absent on the last page, and
+                  absent entirely when you emit without `pageSize`
+            required: [positions, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: optionsPositions
+            market: BTC-10JUL26-55000-C
+            data:
+              positions:
+                - contract: BTC-10JUL26-55000-C
+                  side: long
+                  optionType: C
+                  qty: "1"
+                  value: "6948.86"
+                  fees: "3.47443"
+                  entryPrice: "6948.86"
+                  markPrice: "7194.0717439"
+                  markIV: "0.490087689370473"
+                  underlyingPrice: "62142.5973392596"
+                  breakEvenPrice: "61952.33443"
+                  initialMargin: "0"
+                  realizedPnl: "0"
+                  unrealizedPnl: "245.2117439"
+                  notionalValue: "7194.0717439"
+                  updatedAt: 1783079880460
+              statusCode: 200
+              clientRequestId: b8c56794-c7f8-467d-b331-be8c765a5378
+
+    OptionsPositionsDelta:
+      name: optionsPositionsDelta
+      title: Position Delta
+      summary: >
+        Pushed whenever your positions change; carries changed positions in
+        the same shape as the snapshot. A delta has no `clientRequestId` —
+        that is what distinguishes the live push from a snapshot response.
+        A closed position arrives with `side` `flat` and `qty` `0`; this is
+        the only message that tells you the position is gone.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsPositionsDelta`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              positions:
+                type: array
+                description: Changed positions
+                items:
+                  $ref: '#/components/schemas/Position'
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [positions, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - name: PositionChanged
+          payload:
+            resultType: optionsPositionsDelta
+            market: BTC-10JUL26-55000-C
+            data:
+              positions:
+                - contract: BTC-10JUL26-55000-C
+                  side: long
+                  optionType: C
+                  qty: "1"
+                  value: "6948.86"
+                  fees: "3.47443"
+                  entryPrice: "6948.86"
+                  markPrice: "7250.5"
+                  markIV: "0.4915"
+                  underlyingPrice: "62200.1"
+                  breakEvenPrice: "61952.33443"
+                  initialMargin: "0"
+                  realizedPnl: "0"
+                  unrealizedPnl: "301.64"
+                  notionalValue: "7250.5"
+                  updatedAt: 1783351516417
+              statusCode: 200
+        - name: PositionClosed
+          summary: A closed position arrives as `flat` — remove the position from your book.
+          payload:
+            resultType: optionsPositionsDelta
+            market: BTC-10JUL26-55000-C
+            data:
+              positions:
+                - contract: BTC-10JUL26-55000-C
+                  side: flat
+                  optionType: C
+                  qty: "0"
+                  value: "0"
+                  fees: "0"
+                  entryPrice: "0"
+                  markPrice: "7194.0717439"
+                  markIV: "0"
+                  underlyingPrice: "62142.5973392596"
+                  breakEvenPrice: "0"
+                  initialMargin: "0"
+                  realizedPnl: "0"
+                  unrealizedPnl: "0"
+                  notionalValue: "0"
+                  updatedAt: 1783351520933
+              statusCode: 200
+
+    EmitOptionsOpenOrdersRequest:
+      name: emitOptionsOpenOrders
+      title: Emit Options Open Orders
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitOptionsOpenOrders`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: A contract name to filter, or `ALL` for every market
+              pageSize:
+                type: integer
+                minimum: 1
+                maximum: 200
+                description: Page size, `1`–`200`
+              pageToken:
+                type: string
+                description: The previous response's `nextPageToken`. Omit for the first page
+        required: [message]
+      examples:
+        - payload:
+            message: emitOptionsOpenOrders
+            content:
+              clientRequestId: 90b20400-0c28-4f03-b2e4-d19e881ece31
+              market: BTC-10JUL26-55000-C
+
+    OptionsOpenOrdersResponse:
+      name: optionsOpenOrders
+      title: Open Orders Snapshot
+      summary: Response to `emitOptionsOpenOrders`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsOpenOrders`.
+          market:
+            type: string
+            description: Contract name, or `ALL`
+          data:
+            type: object
+            properties:
+              orders:
+                type: array
+                description: Your open orders
+                items:
+                  $ref: '#/components/schemas/OpenOrder'
+              statusCode:
+                type: integer
+                description: Always `200`.
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              nextPageToken:
+                type: string
+                description: Cursor for the next page; absent on the last page
+            required: [orders, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: optionsOpenOrders
+            market: BTC-10JUL26-55000-C
+            data:
+              orders:
+                - orderId: 01KWKXG9J8RNYDKXCWYZPBEW4C
+                  contract: BTC-10JUL26-55000-C
+                  side: buy
+                  type: limit
+                  initiatorType: user
+                  price: "6700"
+                  quantity: "1"
+                  filledQuantity: "0"
+                  avgFillPrice: "0"
+                  leverage: "0"
+                  reduceOnly: false
+                  postOnly: false
+                  createdAt: 1783079904841
+                  updatedAt: 1783079904841
+              statusCode: 200
+              clientRequestId: 90b20400-0c28-4f03-b2e4-d19e881ece31
+
+    OptionsOpenOrdersDelta:
+      name: optionsOpenOrdersDelta
+      title: Open Order Delta
+      summary: Pushed when an order is added to or drops from your open orders.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsOpenOrdersDelta`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              orders:
+                type: array
+                description: Incremental changes to your open orders
+                items:
+                  $ref: '#/components/schemas/OpenOrderDeltaEntry'
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [orders, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: optionsOpenOrdersDelta
+            market: BTC-10JUL26-55000-C
+            data:
+              orders:
+                - orderId: 01KWKXG9J8RNYDKXCWYZPBEW4C
+                  contract: BTC-10JUL26-55000-C
+                  side: buy
+                  type: limit
+                  initiatorType: user
+                  price: "6700"
+                  quantity: "1"
+                  filledQuantity: "1"
+                  avgFillPrice: "6700"
+                  leverage: "0"
+                  reduceOnly: false
+                  postOnly: false
+                  createdAt: 1783079904841
+                  updatedAt: 1783079950000
+                  kind: drop
+              statusCode: 200
+
+    EmitOptionsRecentOrdersRequest:
+      name: emitOptionsRecentOrders
+      title: Emit Options Recent Orders
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitOptionsRecentOrders`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: A contract name to filter, or `ALL` for every market
+              pageSize:
+                type: integer
+                minimum: 1
+                maximum: 200
+                description: Page size, `1`–`200`
+              pageToken:
+                type: string
+                description: The previous response's `nextPageToken`. Omit for the first page
+              limit:
+                type: integer
+                description: Deprecated alias of `pageSize`; `pageSize` wins when both are sent
+        required: [message]
+      examples:
+        - payload:
+            message: emitOptionsRecentOrders
+            content:
+              clientRequestId: f35fd4a3-749c-4562-bfe6-5b896b887b59
+              market: BTC-10JUL26-55000-C
+              pageSize: 100
+
+    OptionsRecentOrdersResponse:
+      name: optionsRecentOrders
+      title: Recent Orders Snapshot
+      summary: Response to `emitOptionsRecentOrders`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsRecentOrders`.
+          market:
+            type: string
+            description: Contract name, or `ALL`
+          data:
+            type: object
+            properties:
+              orders:
+                type: array
+                description: Your recent order history
+                items:
+                  $ref: '#/components/schemas/RecentOrder'
+              statusCode:
+                type: integer
+                description: Always `200`.
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              nextPageToken:
+                type: string
+                description: Cursor for the next page; absent on the last page
+            required: [orders, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: optionsRecentOrders
+            market: BTC-10JUL26-55000-C
+            data:
+              orders:
+                - orderId: 01KWKXFHQJTQMNWPT1Y8X54HJP
+                  contract: BTC-10JUL26-55000-C
+                  side: buy
+                  type: market
+                  fillType: complete
+                  price: "7000"
+                  quantity: "1"
+                  filledQuantity: "1"
+                  avgFillPrice: "6948.86"
+                  leverage: "0"
+                  createdAt: 1783079880436
+                  updatedAt: 1783079880436
+              statusCode: 200
+              clientRequestId: f35fd4a3-749c-4562-bfe6-5b896b887b59
+
+    OptionsRecentOrdersDelta:
+      name: optionsRecentOrdersDelta
+      title: Recent Order Delta
+      summary: Pushed with new or updated history entries, in the same shape as the snapshot.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsRecentOrdersDelta`.
+          market:
+            type: string
+            description: Contract name
+          data:
+            type: object
+            properties:
+              orders:
+                type: array
+                description: New or updated history entries
+                items:
+                  $ref: '#/components/schemas/RecentOrder'
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [orders, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: optionsRecentOrdersDelta
+            market: BTC-10JUL26-55000-C
+            data:
+              orders:
+                - orderId: 01KWKXFHQJTQMNWPT1Y8X54HJP
+                  contract: BTC-10JUL26-55000-C
+                  side: buy
+                  type: market
+                  fillType: complete
+                  price: "7000"
+                  quantity: "1"
+                  filledQuantity: "1"
+                  avgFillPrice: "6948.86"
+                  leverage: "0"
+                  createdAt: 1783079880436
+                  updatedAt: 1783079880436
+              statusCode: 200
+
+    EmitOptionsAccountSummaryRequest:
+      name: emitOptionsAccountSummary
+      title: Emit Options Account Summary
+      summary: >
+        Returns the current snapshot; does not subscribe you. Requires an active
+        `optionsAccountSummary` subscription for the response to reach you.
+        Account-wide, so `market` is ignored.
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitOptionsAccountSummary`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+        required: [message]
+      examples:
+        - payload:
+            message: emitOptionsAccountSummary
+            content:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+
+    OptionsAccountSummaryResponse:
+      name: optionsAccountSummary
+      title: Account Summary
+      summary: >
+        Response to `emitOptionsAccountSummary`. Delivered only while
+        subscribed to `optionsAccountSummary`; nothing is pushed on its own.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsAccountSummary`.
+          data:
+            type: object
+            properties:
+              accountSummary:
+                type: object
+                properties:
+                  accountBalance:
+                    type: string
+                    description: Total account balance
+                  availableBalance:
+                    type: string
+                    description: Balance available for new orders
+                  totalEquity:
+                    type: string
+                    description: Account equity — account balance plus the signed mark value of open positions
+                  marginUsed:
+                    type: string
+                    description: Margin currently in use — the initial margin locked by open positions and resting orders
+                  initialMarginRatio:
+                    type: string
+                    description: "`marginUsed` as a fraction of total equity"
+                  maintenanceMargin:
+                    type: string
+                    description: Maintenance margin requirement across open positions
+                  maintenanceMarginRatio:
+                    type: string
+                    description: Maintenance margin as a fraction of total equity
+                  withdrawableBalance:
+                    type: string
+                    description: Balance available to withdraw
+                  unrealizedPnl:
+                    type: string
+                    description: Unrealized PnL across open positions. Reporting only — not a term in `totalEquity`
+                  pnl:
+                    type: string
+                    description: Cumulative realized PnL
+                  fees:
+                    type: string
+                    description: Cumulative fees
+                  volume:
+                    type: string
+                    description: Cumulative traded volume
+                required:
+                  - accountBalance
+                  - availableBalance
+                  - totalEquity
+                  - marginUsed
+                  - initialMarginRatio
+                  - maintenanceMargin
+                  - maintenanceMarginRatio
+                  - withdrawableBalance
+                  - unrealizedPnl
+                  - pnl
+                  - fees
+                  - volume
+              statusCode:
+                type: integer
+                description: Always `200`.
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [accountSummary, statusCode]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: optionsAccountSummary
+            data:
+              accountSummary:
+                accountBalance: "19611.7711628"
+                availableBalance: "10636.0473042985"
+                totalEquity: "20504.4429067"
+                marginUsed: "8975.7238585015"
+                initialMarginRatio: "0.4377453169219538"
+                maintenanceMargin: "1170.2238585015"
+                maintenanceMarginRatio: "0.0570717216666793"
+                withdrawableBalance: "10537.4473042985"
+                unrealizedPnl: "343.8117439"
+                pnl: "158.080282"
+                fees: "37.0449692"
+                volume: "13551.78"
+              statusCode: 200
+              clientRequestId: 9bbfd749-1a4b-45d3-9b57-63472a3c5711
+
+    EmitOptionsSettlementsRequest:
+      name: emitOptionsSettlements
+      title: Emit Options Settlements
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitOptionsSettlements`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: >
+                  A contract name, or `ALL`; only picks the subscription the
+                  response is delivered on
+              pageSize:
+                type: integer
+                minimum: 1
+                maximum: 200
+                description: Page size, `1`–`200`; a value above `50` is treated as `50`
+              pageToken:
+                type: string
+                description: The previous response's `nextPageToken`. Omit for the first page
+              limit:
+                type: integer
+                description: Deprecated alias of `pageSize`; `pageSize` wins when both are sent
+        required: [message]
+      examples:
+        - payload:
+            message: emitOptionsSettlements
+            content:
+              clientRequestId: 5aa61e15-9e0f-4d59-975b-58f622362763
+              market: BTC-3JUL26-55000-C
+              pageSize: 50
+
+    OptionsSettlementsResponse:
+      name: optionsSettlements
+      title: Settlements Snapshot
+      summary: Response to `emitOptionsSettlements`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `optionsSettlements`.
+          market:
+            type: string
+            description: Contract name, or `ALL`
+          data:
+            type: object
+            properties:
+              settlements:
+                type: array
+                description: Settlement results
+                items:
+                  $ref: '#/components/schemas/Settlement'
+              statusCode:
+                type: integer
+                description: Always `200`.
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              nextPageToken:
+                type: string
+                description: Cursor for the next page; absent on the last page
+            required: [settlements, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: optionsSettlements
+            market: BTC-3JUL26-55000-C
+            data:
+              settlements:
+                - contract: BTC-3JUL26-55000-C
+                  side: long
+                  optionType: C
+                  qty: "1"
+                  value: "6602.92"
+                  entryPrice: "6602.92"
+                  markPrice: "6761.0002820975"
+                  underlyingPrice: "61761.0002820975"
+                  breakEvenPrice: "61609.52292"
+                  settlementPrice: "61761.0002820975"
+                  payoff: "6761.0002820975"
+                  deliveryFee: "9.26415"
+                  realizedPnl: "158.080282"
+                  settledAt: 1783065647000
+              statusCode: 200
+              clientRequestId: 5aa61e15-9e0f-4d59-975b-58f622362763

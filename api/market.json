@@ -1,0 +1,548 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Market Data API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://market-data.sandbox.rails.xyz"
+    }
+  ],
+  "paths": {
+    "/api/v1/market-data": {
+      "get": {
+        "summary": "Retrieve market data for a given list of markets",
+        "operationId": "getMarketData",
+        "parameters": [
+          {
+            "name": "markets",
+            "in": "query",
+            "description": "Comma separated market names. Example value: `BTC-USDT,ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/marketDataPoint"
+                  }
+                },
+                "example": [
+                  {
+                    "market": "BTC-USDT",
+                    "type": "INDEX",
+                    "index": "CCIX",
+                    "value": "58400.1937255873",
+                    "updatedAt": 1726171141994
+                  },
+                  {
+                    "market": "BTC-USDT",
+                    "type": "MARK",
+                    "index": "RAILS",
+                    "value": "58193.018",
+                    "updatedAt": 1726174865750
+                  },
+                  {
+                    "market": "BTC-USDT",
+                    "type": "24H_COUNT",
+                    "index": "RAILS",
+                    "value": "46730",
+                    "updatedAt": 1726171109083
+                  },
+                  {
+                    "market": "BTC-USDT",
+                    "type": "24H_VOLUME",
+                    "index": "RAILS",
+                    "value": "28313423.250000027202",
+                    "updatedAt": 1726171109083
+                  },
+                  {
+                    "market": "BTC-USDT",
+                    "type": "ASK",
+                    "index": "RAILS",
+                    "value": "58191.7113328",
+                    "updatedAt": 1726174865550
+                  },
+                  {
+                    "market": "BTC-USDT",
+                    "type": "BID",
+                    "index": "RAILS",
+                    "value": "58180.07415425",
+                    "updatedAt": 1726174865550
+                  },
+                  {
+                    "market": "BTC-USDT",
+                    "type": "FUNDING",
+                    "index": "RAILS",
+                    "value": "0.0001125",
+                    "updatedAt": 1726167616514
+                  },
+                  {
+                    "market": "BTC-USDT",
+                    "type": "NEXT_FUNDING",
+                    "index": "RAILS",
+                    "value": "0.00009875",
+                    "updatedAt": 1726167616514
+                  },
+                  {
+                    "market": "BTC-USDT",
+                    "type": "OPEN_INTEREST",
+                    "index": "RAILS",
+                    "value": "53.28177507",
+                    "updatedAt": 1726170313764
+                  },
+                  {
+                    "market": "ETH-USDT",
+                    "type": "INDEX",
+                    "index": "CCIX",
+                    "value": "2360.74497472941",
+                    "updatedAt": 1726171140745
+                  },
+                  {
+                    "market": "ETH-USDT",
+                    "type": "MARK",
+                    "index": "RAILS",
+                    "value": "2350.32",
+                    "updatedAt": 1726174865612
+                  },
+                  {
+                    "market": "ETH-USDT",
+                    "type": "24H_COUNT",
+                    "index": "RAILS",
+                    "value": "46948",
+                    "updatedAt": 1726171109083
+                  },
+                  {
+                    "market": "ETH-USDT",
+                    "type": "24H_VOLUME",
+                    "index": "RAILS",
+                    "value": "28513340.9400000105",
+                    "updatedAt": 1726171109083
+                  },
+                  {
+                    "market": "ETH-USDT",
+                    "type": "ASK",
+                    "index": "RAILS",
+                    "value": "2350.5038547",
+                    "updatedAt": 1726174865612
+                  },
+                  {
+                    "market": "ETH-USDT",
+                    "type": "BID",
+                    "index": "RAILS",
+                    "value": "2350.13526604",
+                    "updatedAt": 1726174865612
+                  },
+                  {
+                    "market": "ETH-USDT",
+                    "type": "FUNDING",
+                    "index": "RAILS",
+                    "value": "-0.0000875",
+                    "updatedAt": 1726167616514
+                  },
+                  {
+                    "market": "ETH-USDT",
+                    "type": "NEXT_FUNDING",
+                    "index": "RAILS",
+                    "value": "-0.00006125",
+                    "updatedAt": 1726167616514
+                  },
+                  {
+                    "market": "ETH-USDT",
+                    "type": "OPEN_INTEREST",
+                    "index": "RAILS",
+                    "value": "592.23030026",
+                    "updatedAt": 1726170313759
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/order-book": {
+      "get": {
+        "summary": "Retrieve order book snapshot for the given market",
+        "operationId": "getOrderBook",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "query",
+            "description": "Market name. Example value: `ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/orderBookSnapshot"
+                },
+                "example": {
+                  "orders": [
+                    {
+                      "quantity": "0.1",
+                      "price": "4355.1",
+                      "orderType": "buy"
+                    },
+                    {
+                      "quantity": "0.2",
+                      "price": "4355.2",
+                      "orderType": "sell"
+                    }
+                  ],
+                  "ts": 1772576154169
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/markets": {
+      "get": {
+        "summary": "Get all supported markets",
+        "operationId": "getSupportedMarkets",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/supportedMarkets"
+                },
+                "example": {
+                  "markets": [
+                    "BTC-USDT",
+                    "ETH-USDT"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/product-specifications": {
+      "get": {
+        "summary": "Get product specifications",
+        "operationId": "getProductSpecifications",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/productSpecification"
+                  }
+                },
+                "example": [
+                  {
+                    "market": "BTC-USDT",
+                    "tickSize": "0.01",
+                    "lotSize": "0.0000001",
+                    "fundingIntervalHours": 1,
+                    "minOrderSizeUSD": "1",
+                    "maxOrderSizeUSD": "",
+                    "contractType": "Vanilla"
+                  },
+                  {
+                    "market": "ETH-USDT",
+                    "tickSize": "0.01",
+                    "lotSize": "0.0000001",
+                    "fundingIntervalHours": 1,
+                    "minOrderSizeUSD": "1",
+                    "maxOrderSizeUSD": "",
+                    "contractType": "Vanilla"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contract-specifications": {
+      "get": {
+        "summary": "Get contract specifications",
+        "operationId": "getContractSpecifications",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/contractSpecification"
+                  }
+                },
+                "example": [
+                  {
+                    "contractName": "BTC-USDT",
+                    "underlyingPrice": "63568.7382843144",
+                    "priceIndex": "CCIX (CoinDesk Aggregated Index, formerly CCCAGG)",
+                    "indexUpdateFrequency": "1 second",
+                    "contractType": "Linear (USDT-margined)",
+                    "tickSize": "0.01",
+                    "lotSize": "0.0000001",
+                    "priceUnit": "USDT per BTC",
+                    "quantityUnit": "BTC",
+                    "minOrderNotional": "1 USDT",
+                    "tradingHours": "24/7 (except during scheduled maintenance)",
+                    "fundingTimes": "Hourly funding",
+                    "fundingRateCap": "±0.5% per 1-hour interval",
+                    "marginType": "Isolated, Cross"
+                  },
+                  {
+                    "contractName": "ETH-USDT",
+                    "underlyingPrice": "1860.22242925263",
+                    "priceIndex": "CCIX (CoinDesk Aggregated Index, formerly CCCAGG)",
+                    "indexUpdateFrequency": "1 second",
+                    "contractType": "Linear (USDT-margined)",
+                    "tickSize": "0.01",
+                    "lotSize": "0.0000001",
+                    "priceUnit": "USDT per ETH",
+                    "quantityUnit": "ETH",
+                    "minOrderNotional": "1 USDT",
+                    "tradingHours": "24/7 (except during scheduled maintenance)",
+                    "fundingTimes": "Hourly funding",
+                    "fundingRateCap": "±0.5% per 1-hour interval",
+                    "marginType": "Isolated, Cross"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "marketDataPoint": {
+        "type": "object",
+        "properties": {
+          "market": {
+            "type": "string",
+            "description": "Market name. Example value: `ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "INDEX",
+              "MARK",
+              "ASK",
+              "BID",
+              "FUNDING",
+              "NEXT_FUNDING",
+              "OPEN_INTEREST",
+              "24H_VOLUME",
+              "24H_COUNT"
+            ],
+            "description": "Type of market data."
+          },
+          "index": {
+            "type": "string",
+            "enum": [
+              "CCIX",
+              "CCCAGG",
+              "HYPERLIQUID",
+              "KRAKEN",
+              "RAILS"
+            ],
+            "description": "Name of the index."
+          },
+          "value": {
+            "type": "string",
+            "description": "The value for the given market data type and index. For `FUNDING` and `NEXT_FUNDING`, this value is represented as a decimal rate, not a percentage."
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Timestamp (milliseconds since epoch) when this value was last updated."
+          }
+        },
+        "required": ["market", "type", "index", "value", "updatedAt"]
+      },
+      "orderBookSnapshot": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "quantity": {
+                  "type": "string",
+                  "description": "Total quantity at this price level."
+                },
+                "price": {
+                  "type": "string",
+                  "description": "Price level."
+                },
+                "orderType": {
+                  "type": "string",
+                  "description": "Side of the book: 'buy' for bids, 'sell' for asks.",
+                  "enum": [
+                    "buy",
+                    "sell"
+                  ]
+                }
+              },
+              "required": ["quantity", "price", "orderType"]
+            }
+          },
+          "ts": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Timestamp (milliseconds since epoch) when this snapshot was generated."
+          }
+        },
+        "required": ["orders", "ts"]
+      },
+      "supportedMarkets": {
+        "type": "object",
+        "properties": {
+          "markets": {
+            "type": "array",
+            "description": "List of all supported market names.",
+            "items": {
+              "type": "string",
+              "description": "Market name, e.g., 'BTC-USDT'."
+            }
+          }
+        },
+        "required": ["markets"]
+      },
+      "productSpecification": {
+        "type": "object",
+        "properties": {
+          "market": {
+            "type": "string",
+            "description": "Market name. Example value: `ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint."
+          },
+          "tickSize": {
+            "type": "string",
+            "description": "Minimum price movement."
+          },
+          "lotSize": {
+            "type": "string",
+            "description": "Minimum quantity movement."
+          },
+          "fundingIntervalHours": {
+            "type": "integer",
+            "description": "Funding interval in hours."
+          },
+          "minOrderSizeUSD": {
+            "type": "string",
+            "description": "Minimum order size in USD."
+          },
+          "maxOrderSizeUSD": {
+            "type": "string",
+            "description": "Maximum order size in USD. Empty string means no limit."
+          },
+          "contractType": {
+            "type": "string",
+            "description": "Type of the contract."
+          }
+        },
+        "required": ["market", "tickSize", "lotSize", "fundingIntervalHours", "minOrderSizeUSD", "maxOrderSizeUSD", "contractType"]
+      },
+      "contractSpecification": {
+        "type": "object",
+        "properties": {
+          "contractName": {
+            "type": "string",
+            "description": "Identifier for the perpetual contract, such as `BTC-USDT`."
+          },
+          "underlyingPrice": {
+            "type": "string",
+            "description": "Current index price of the contract's underlying asset, serialized as a decimal string."
+          },
+          "priceIndex": {
+            "type": "string",
+            "description": "Reference index used for the underlying price. CCIX is the CoinDesk Aggregated Index, formerly CCCAGG."
+          },
+          "indexUpdateFrequency": {
+            "type": "string",
+            "description": "Frequency at which the reference index is updated."
+          },
+          "contractType": {
+            "type": "string",
+            "description": "How the contract is structured and which currency is used for margin."
+          },
+          "tickSize": {
+            "type": "string",
+            "description": "Minimum price movement."
+          },
+          "lotSize": {
+            "type": "string",
+            "description": "Minimum quantity movement."
+          },
+          "priceUnit": {
+            "type": "string",
+            "description": "Unit in which prices are quoted, expressed as quote currency per base currency, such as `USDT per BTC`."
+          },
+          "quantityUnit": {
+            "type": "string",
+            "description": "Unit in which order and position quantities are expressed, such as `BTC`."
+          },
+          "minOrderNotional": {
+            "type": "string",
+            "description": "Minimum order notional value, as an amount and quote currency code, such as `1 USDT`."
+          },
+          "tradingHours": {
+            "type": "string",
+            "description": "Hours during which the contract is available for trading."
+          },
+          "fundingTimes": {
+            "type": "string",
+            "description": "Frequency at which funding is applied."
+          },
+          "fundingRateCap": {
+            "type": "string",
+            "description": "Upper and lower funding rate limits over a 1-hour interval."
+          },
+          "marginType": {
+            "type": "string",
+            "description": "Supported margin modes."
+          }
+        },
+        "required": [
+          "contractName",
+          "underlyingPrice",
+          "priceIndex",
+          "indexUpdateFrequency",
+          "contractType",
+          "tickSize",
+          "lotSize",
+          "priceUnit",
+          "quantityUnit",
+          "minOrderNotional",
+          "tradingHours",
+          "fundingTimes",
+          "fundingRateCap",
+          "marginType"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,2507 @@
+asyncapi: 3.0.0
+info:
+  title: Rails Perps WebSocket API
+  version: 1.0.0
+  description: >
+    Real-time market data, order updates, and execution events for Rails
+    Perpetuals. All requests and responses share a common envelope: requests
+    are `{"message": "<requestType>", "content": {...}}`, responses and
+    stream pushes are `{"resultType": "<responseType>", "market"?: "...",
+    "data": {...}}`.
+defaultContentType: application/json
+
+servers:
+  sandbox:
+    host: ws.sandbox.rails.xyz
+    protocol: wss
+    description: >
+      Connect with a fixed `product=perpetuals` query parameter, plus
+      `market` and (optionally) `subscriptions` query parameters, e.g.
+      `wss://ws.sandbox.rails.xyz?product=perpetuals&market=BTC-USDT&subscriptions=orders,trades,publicTrades,publicOrderBook`.
+      While `market=ALL` is supported, a separate connection per market is
+      recommended in production so that issues on one connection cannot
+      disrupt data for other markets. An optional `sessionId` (UUID) query
+      parameter enables [WebSocket Session](/latest/websocket-session) on
+      the Order Creation Stream.
+    security:
+      - $ref: '#/components/securitySchemes/wsAuth'
+
+channels:
+  commonRequests:
+    address: "?product=perpetuals&market={market}"
+    title: Common Requests
+    description: >
+      Requests and responses available on every connection regardless of
+      active subscriptions.
+    parameters:
+      market:
+        description: >
+          A specific market (e.g. `BTC-USDT`) or `ALL`. When `ALL` is used,
+          `market` must be supplied explicitly in the `content` of every
+          request that accepts it.
+        default: BTC-USDT
+    messages:
+      pingRequest:
+        $ref: '#/components/messages/PingRequest'
+      pongResponse:
+        $ref: '#/components/messages/PongResponse'
+      subscribeRequest:
+        $ref: '#/components/messages/SubscribeRequest'
+      subscribedResponse:
+        $ref: '#/components/messages/SubscribedResponse'
+      unsubscribeRequest:
+        $ref: '#/components/messages/UnsubscribeRequest'
+      unsubscribedResponse:
+        $ref: '#/components/messages/UnsubscribedResponse'
+      subscribeError:
+        $ref: '#/components/messages/SubscribeError'
+      unsubscribeError:
+        $ref: '#/components/messages/UnsubscribeError'
+      connectionShutdownNotice:
+        $ref: '#/components/messages/ConnectionShutdownNotice'
+
+  orderCreationStream:
+    address: "?product=perpetuals&market={market}&subscriptions=orders&sessionId={sessionId}"
+    title: Order Creation Stream
+    description: >
+      Active on the `orders` subscription, which is on by default when you
+      connect (unless the `subscriptions` query parameter replaces it).
+      Create, modify, and cancel orders, update isolated margin, and
+      receive fill/rejection notifications. Supports a
+      [WebSocket Session](/latest/websocket-session) via the connection's
+      `sessionId` query parameter.
+    parameters:
+      market:
+        description: >
+          A specific market (e.g. `BTC-USDT`) or `ALL`. When `ALL` is used,
+          `market` must be supplied explicitly in the `content` of every
+          request that accepts it.
+        default: BTC-USDT
+      sessionId:
+        description: >
+          UUID identifying a session. Enables
+          [WebSocket Session](/latest/websocket-session) on this stream.
+          Omit to opt out.
+        default: d785d51c-054e-4e33-9738-92d04ede9fab
+    messages:
+      createOrderRequest:
+        $ref: '#/components/messages/CreateOrderRequest'
+      createOrderAck:
+        $ref: '#/components/messages/CreateOrderAck'
+      createOrderConfirmation:
+        $ref: '#/components/messages/CreateOrderConfirmation'
+      createOrderError:
+        $ref: '#/components/messages/CreateOrderError'
+      modifyOrderRequest:
+        $ref: '#/components/messages/ModifyOrderRequest'
+      modifyOrderAck:
+        $ref: '#/components/messages/ModifyOrderAck'
+      modifyOrderConfirmation:
+        $ref: '#/components/messages/ModifyOrderConfirmation'
+      modifyOrderError:
+        $ref: '#/components/messages/ModifyOrderError'
+      cancelOrderRequest:
+        $ref: '#/components/messages/CancelOrderRequest'
+      cancelOrderAck:
+        $ref: '#/components/messages/CancelOrderAck'
+      cancelOrderConfirmation:
+        $ref: '#/components/messages/CancelOrderConfirmation'
+      cancelOrderError:
+        $ref: '#/components/messages/CancelOrderError'
+      updateMarginRequest:
+        $ref: '#/components/messages/UpdateMarginRequest'
+      updateMarginAck:
+        $ref: '#/components/messages/UpdateMarginAck'
+      updateMarginConfirmation:
+        $ref: '#/components/messages/UpdateMarginConfirmation'
+      updateMarginError:
+        $ref: '#/components/messages/UpdateMarginError'
+      completeFillNotification:
+        $ref: '#/components/messages/CompleteFillNotification'
+      partialFillNotification:
+        $ref: '#/components/messages/PartialFillNotification'
+      rejectOrderNotification:
+        $ref: '#/components/messages/RejectOrderNotification'
+      sessionBackfillNotification:
+        $ref: '#/components/messages/SessionBackfillNotification'
+
+  accountTradesStream:
+    address: "?product=perpetuals&market={market}&subscriptions=trades"
+    title: Account Trades Stream
+    description: >
+      Available on the `trades` subscription. Real-time fills for your
+      account across all markets, regardless of which market you connected
+      with.
+    parameters:
+      market:
+        description: >
+          A specific market (e.g. `BTC-USDT`) or `ALL`. When `ALL` is used,
+          `market` must be supplied explicitly in the `content` of every
+          request that accepts it.
+        default: BTC-USDT
+    messages:
+      completedOrdersDelta:
+        $ref: '#/components/messages/CompletedOrdersDelta'
+
+  publicTradesStream:
+    address: "?product=perpetuals&market={market}&subscriptions=publicTrades"
+    title: Public Trades Stream
+    description: >
+      Available on the `publicTrades` subscription. Real-time trade
+      executions and on-demand snapshots for a specific market.
+    parameters:
+      market:
+        description: >
+          A specific market (e.g. `BTC-USDT`) or `ALL`. When `ALL` is used,
+          `market` must be supplied explicitly in the `content` of every
+          request that accepts it.
+        default: BTC-USDT
+    messages:
+      emitPublicCompletedOrdersRequest:
+        $ref: '#/components/messages/EmitPublicCompletedOrdersRequest'
+      publicCompletedOrdersResponse:
+        $ref: '#/components/messages/PublicCompletedOrdersResponse'
+      publicCompletedOrdersDelta:
+        $ref: '#/components/messages/PublicCompletedOrdersDelta'
+
+  publicOrderBookStream:
+    address: "?product=perpetuals&market={market}&subscriptions=publicOrderBook"
+    title: Order Book Stream
+    description: >
+      Available on the `publicOrderBook` subscription. Real-time order book
+      deltas and on-demand full snapshots for a specific market.
+    parameters:
+      market:
+        description: >
+          A specific market (e.g. `BTC-USDT`) or `ALL`. When `ALL` is used,
+          `market` must be supplied explicitly in the `content` of every
+          request that accepts it.
+        default: BTC-USDT
+    messages:
+      emitPublicOrderBookRequest:
+        $ref: '#/components/messages/EmitPublicOrderBookRequest'
+      publicOrderBookResponse:
+        $ref: '#/components/messages/PublicOrderBookResponse'
+      publicOrderBookDelta:
+        $ref: '#/components/messages/PublicOrderBookDelta'
+
+operations:
+  ping:
+    action: receive
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Application-level heartbeat, available with or without a subscription.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/pingRequest'
+  pong:
+    action: send
+    channel:
+      $ref: '#/channels/commonRequests'
+    messages:
+      - $ref: '#/channels/commonRequests/messages/pongResponse'
+  subscribe:
+    action: receive
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Add one or more streams to the current connection. Idempotent.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/subscribeRequest'
+  subscribed:
+    action: send
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Confirmation (200) or error response to `subscribe`.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/subscribedResponse'
+      - $ref: '#/channels/commonRequests/messages/subscribeError'
+  unsubscribe:
+    action: receive
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Remove one or more streams from the current connection. Idempotent.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/unsubscribeRequest'
+  unsubscribed:
+    action: send
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Confirmation (200) or error response to `unsubscribe`.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/unsubscribedResponse'
+      - $ref: '#/channels/commonRequests/messages/unsubscribeError'
+  connectionShutdown:
+    action: send
+    channel:
+      $ref: '#/channels/commonRequests'
+    summary: Pushed unprompted when the connection is scheduled to close; reconnect before the deadline it carries.
+    messages:
+      - $ref: '#/channels/commonRequests/messages/connectionShutdownNotice'
+
+  createOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: Create a limit or market order.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/createOrderRequest'
+  createOrderResult:
+    action: send
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: Acknowledgment (202), confirmation (200), or error response to `createOrder`.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/createOrderAck'
+      - $ref: '#/channels/orderCreationStream/messages/createOrderConfirmation'
+      - $ref: '#/channels/orderCreationStream/messages/createOrderError'
+
+  modifyOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: Modify the price and/or quantity of an existing order.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/modifyOrderRequest'
+  modifyOrderResult:
+    action: send
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: >
+      Acknowledgment (202), confirmation (200) carrying the replacement
+      order, or error response to `modifyOrder`.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/modifyOrderAck'
+      - $ref: '#/channels/orderCreationStream/messages/modifyOrderConfirmation'
+      - $ref: '#/channels/orderCreationStream/messages/modifyOrderError'
+
+  cancelOrder:
+    action: receive
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: Cancel an order by ID.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/cancelOrderRequest'
+  cancelOrderResult:
+    action: send
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: Acknowledgment (202), confirmation (200), or error response to `cancelOrder`.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/cancelOrderAck'
+      - $ref: '#/channels/orderCreationStream/messages/cancelOrderConfirmation'
+      - $ref: '#/channels/orderCreationStream/messages/cancelOrderError'
+
+  updateMargin:
+    action: receive
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: Set the absolute target value of the isolated position margin.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/updateMarginRequest'
+  updateMarginResult:
+    action: send
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: Acknowledgment (202), confirmation (200, including no-op), or error response to `updateMargin`.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/updateMarginAck'
+      - $ref: '#/channels/orderCreationStream/messages/updateMarginConfirmation'
+      - $ref: '#/channels/orderCreationStream/messages/updateMarginError'
+
+  orderFilled:
+    action: send
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: Pushed when an order is completely or partially filled.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/completeFillNotification'
+      - $ref: '#/channels/orderCreationStream/messages/partialFillNotification'
+  orderRejected:
+    action: send
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: Pushed when an order is rejected.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/rejectOrderNotification'
+
+  sessionBackfill:
+    action: send
+    channel:
+      $ref: '#/channels/orderCreationStream'
+    summary: >
+      Pushed once per connection when `sessionId` is supplied and the
+      connection is subscribed to the Order Creation Stream. Summarizes any
+      missed order events backfilled since the last delivered position, or
+      reports that none were backfilled.
+    messages:
+      - $ref: '#/channels/orderCreationStream/messages/sessionBackfillNotification'
+
+  accountTradesUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/accountTradesStream'
+    summary: Pushed whenever new trades are executed on your account.
+    messages:
+      - $ref: '#/channels/accountTradesStream/messages/completedOrdersDelta'
+
+  emitPublicCompletedOrders:
+    action: receive
+    channel:
+      $ref: '#/channels/publicTradesStream'
+    summary: >
+      Request a snapshot of recent public trades. Useful for initial state
+      hydration, reconnect recovery, and reconciliation before processing
+      delta updates.
+    messages:
+      - $ref: '#/channels/publicTradesStream/messages/emitPublicCompletedOrdersRequest'
+  publicCompletedOrdersSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/publicTradesStream'
+    summary: Response to `emitPublicCompletedOrders`.
+    messages:
+      - $ref: '#/channels/publicTradesStream/messages/publicCompletedOrdersResponse'
+  publicTradesUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/publicTradesStream'
+    summary: Pushed whenever new trades are executed in the subscribed market.
+    messages:
+      - $ref: '#/channels/publicTradesStream/messages/publicCompletedOrdersDelta'
+
+  emitPublicOrderBook:
+    action: receive
+    channel:
+      $ref: '#/channels/publicOrderBookStream'
+    summary: >
+      Request a full order book snapshot. Useful for bootstrapping and
+      resynchronizing local book state before processing delta updates.
+    messages:
+      - $ref: '#/channels/publicOrderBookStream/messages/emitPublicOrderBookRequest'
+  publicOrderBookSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/publicOrderBookStream'
+    summary: Response to `emitPublicOrderBook`.
+    messages:
+      - $ref: '#/channels/publicOrderBookStream/messages/publicOrderBookResponse'
+  publicOrderBookUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/publicOrderBookStream'
+    summary: Pushed whenever the order book changes for the subscribed market.
+    messages:
+      - $ref: '#/channels/publicOrderBookStream/messages/publicOrderBookDelta'
+
+components:
+  securitySchemes:
+    wsAuth:
+      type: httpApiKey
+      in: header
+      name: Sec-WebSocket-Protocol
+      description: >
+        Supply as `authorization#<JWT>` during the WebSocket handshake.
+
+  schemas:
+    Order:
+      type: object
+      description: >
+        Omitted entirely from some error responses; when present, all
+        fields below are populated.
+      properties:
+        market:
+          type: string
+          description: Market name
+        orderId:
+          type: string
+          description: Unique identifier for the order
+        orderType:
+          type: string
+          enum: [buy, sell]
+          description: Order side
+        tradeType:
+          type: string
+          enum: [limit, market]
+          description: Order type
+        price:
+          type: string
+          description: Limit price; for market orders, expected/executed price
+        quantity:
+          type: string
+          description: Remaining quantity
+        filledQuantity:
+          type: string
+          description: Filled quantity
+        leverage:
+          type: string
+          description: Leverage used at order creation/modification
+        createdAt:
+          type: integer
+          format: int64
+          description: Milliseconds since epoch
+        updatedAt:
+          type: integer
+          format: int64
+          description: Milliseconds since epoch
+        orderStatus:
+          type: string
+          enum: [pending, active, cancelling, cancelled, modifying, modified, rejected]
+          description: >
+            `pending` awaiting acceptance; `active` resting on the book;
+            `cancelling` cancellation in progress; `cancelled` cancelled;
+            `modifying` modification in progress; `modified` superseded by a
+            modification (cancelled and replaced by a new order); `rejected`
+            rejected
+        clientRequestId:
+          type: string
+          description: Client-generated UUID for correlation
+        reduceOnly:
+          type: boolean
+          description: Restricts the order to reducing an existing position
+        postOnly:
+          type: boolean
+          description: Maker-only creation flag
+        avgFillPrice:
+          type: string
+          description: Average price across fills; present once at least one fill has occurred
+      required:
+        - market
+        - orderId
+        - orderType
+        - tradeType
+        - price
+        - quantity
+        - filledQuantity
+        - leverage
+        - createdAt
+        - updatedAt
+        - orderStatus
+        - reduceOnly
+        - postOnly
+
+    ErrorDetail:
+      type: object
+      properties:
+        slug:
+          type: string
+          description: Machine-readable error slug
+        code:
+          type: string
+          description: Error code
+      required: [slug, code]
+
+    OrderBookLevel:
+      type: object
+      properties:
+        orderType:
+          type: string
+          enum: [buy, sell]
+          description: Order side
+        price:
+          type: string
+          description: Price level
+        quantity:
+          type: string
+          description: Size at the price level; `0` in a delta removes the level
+      required: [orderType, price, quantity]
+
+    PublicTradeExecution:
+      type: object
+      properties:
+        executionType:
+          type: string
+          enum: [taker, maker]
+          description: Execution role
+        matchId:
+          type: string
+          description: Unique identifier for the trade match
+        orderType:
+          type: string
+          enum: [buy, sell]
+          description: Order side
+        price:
+          type: string
+          description: Execution price
+        quantity:
+          type: string
+          description: Execution quantity
+        updatedAt:
+          type: integer
+          format: int64
+          description: Execution timestamp (milliseconds since epoch)
+      required: [executionType, matchId, orderType, price, quantity, updatedAt]
+
+    AccountTradeFill:
+      type: object
+      properties:
+        market:
+          type: string
+          description: Market name
+        orderId:
+          type: string
+          description: Unique identifier of the order
+        matchId:
+          type: string
+          description: Unique identifier for the trade match
+        orderType:
+          type: string
+          enum: [buy, sell]
+          description: Order side
+        tradeType:
+          type: string
+          enum: [limit, market]
+          description: Order type
+        executionType:
+          type: string
+          enum: [taker, maker]
+          description: Execution role
+        fillType:
+          type: string
+          enum: [partial, complete]
+          description: Whether this execution completely or partially filled the order
+        price:
+          type: string
+          description: Execution price
+        quantity:
+          type: string
+          description: Execution quantity
+        originalQuantity:
+          type: string
+          description: Order quantity before any fill
+        leverage:
+          type: string
+          description: Leverage at time of execution
+        fees:
+          type: string
+          description: Fees charged for the trade
+        createdAt:
+          type: integer
+          format: int64
+          description: Order creation timestamp (milliseconds since epoch)
+        updatedAt:
+          type: integer
+          format: int64
+          description: Fill timestamp (milliseconds since epoch)
+        triggerType:
+          type: string
+          enum: [none, take_profit, stop_loss, liquidation]
+          description: What triggered order creation, if anything
+        triggerPrice:
+          type: string
+          description: Price that triggered order creation; present when `triggerType` is not `none`
+        triggerCreatedAt:
+          type: integer
+          format: int64
+          description: Trigger creation timestamp (milliseconds since epoch)
+      required:
+        - market
+        - orderId
+        - matchId
+        - orderType
+        - tradeType
+        - executionType
+        - fillType
+        - price
+        - quantity
+        - originalQuantity
+        - leverage
+        - fees
+        - createdAt
+        - updatedAt
+        - triggerType
+        - triggerPrice
+        - triggerCreatedAt
+
+  messages:
+    PingRequest:
+      name: ping
+      title: Ping
+      summary: Connection health check.
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `ping`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+        required: [message]
+      examples:
+        - payload:
+            message: ping
+            content:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+
+    PongResponse:
+      name: pong
+      title: Pong
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `pong`.
+          data:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [statusCode]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: pong
+            data:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+              statusCode: 200
+
+    SubscribeRequest:
+      name: subscribe
+      title: Subscribe
+      summary: Add one or more streams to the current connection.
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `subscribe`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              subscriptions:
+                type: array
+                description: One or more subscriptions to add
+                items:
+                  type: string
+                  enum: [orders, trades, publicTrades, publicOrderBook]
+            required: [subscriptions]
+        required: [message, content]
+      examples:
+        - payload:
+            message: subscribe
+            content:
+              clientRequestId: cfff0f58-8780-4cf2-b3d3-6439fed37304
+              subscriptions: [trades, publicTrades, publicOrderBook]
+
+    SubscribedResponse:
+      name: subscribed
+      title: Subscribed
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `subscribed`.
+          data:
+            type: object
+            properties:
+              activeSubscriptions:
+                type: array
+                description: All currently active subscriptions after the operation
+                items:
+                  type: string
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              requestedSubscriptions:
+                type: array
+                description: The specific subscriptions that were requested to be added
+                items:
+                  type: string
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [activeSubscriptions, requestedSubscriptions, statusCode]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: subscribed
+            data:
+              activeSubscriptions: [orders, trades, publicTrades, publicOrderBook]
+              clientRequestId: cfff0f58-8780-4cf2-b3d3-6439fed37304
+              requestedSubscriptions: [trades, publicTrades, publicOrderBook]
+              statusCode: 200
+
+    UnsubscribeRequest:
+      name: unsubscribe
+      title: Unsubscribe
+      summary: Remove one or more streams from the current connection.
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `unsubscribe`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              subscriptions:
+                type: array
+                description: One or more subscriptions to remove
+                items:
+                  type: string
+                  enum: [orders, trades, publicTrades, publicOrderBook]
+            required: [subscriptions]
+        required: [message, content]
+      examples:
+        - payload:
+            message: unsubscribe
+            content:
+              clientRequestId: 245867a5-0de9-4542-a9da-724577ab4102
+              subscriptions: [trades, publicTrades, publicOrderBook]
+
+    UnsubscribedResponse:
+      name: unsubscribed
+      title: Unsubscribed
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `unsubscribed`.
+          data:
+            type: object
+            properties:
+              activeSubscriptions:
+                type: array
+                description: Remaining active subscriptions after the operation
+                items:
+                  type: string
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              requestedUnsubscriptions:
+                type: array
+                description: The specific subscriptions that were requested to be removed
+                items:
+                  type: string
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [activeSubscriptions, requestedUnsubscriptions, statusCode]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: unsubscribed
+            data:
+              activeSubscriptions: [orders]
+              clientRequestId: 245867a5-0de9-4542-a9da-724577ab4102
+              requestedUnsubscriptions: [trades, publicTrades, publicOrderBook]
+              statusCode: 200
+
+    SubscribeError:
+      name: subscribeError
+      title: Subscribe — Error
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `subscribe`.
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                enum: [400, 429]
+                description: Error status code
+              body:
+                type: string
+                description: Status message
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, data]
+      examples:
+        - name: LimitReached
+          payload:
+            resultType: subscribe
+            data:
+              statusCode: 429
+              body: Subscription limit reached (max 100)
+              error:
+                slug: SUBSCRIPTION_LIMIT
+                code: "SYS-0012"
+              clientRequestId: cfff0f58-8780-4cf2-b3d3-6439fed37304
+
+    UnsubscribeError:
+      name: unsubscribeError
+      title: Unsubscribe — Error
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `unsubscribe`.
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                enum: [400]
+                description: Error status code
+              body:
+                type: string
+                description: Status message
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, data]
+      examples:
+        - name: InvalidSubscriptions
+          payload:
+            resultType: unsubscribe
+            data:
+              statusCode: 400
+              body: invalid_subscriptions
+              error:
+                slug: BAD_REQUEST
+                code: "SYS-0006"
+              clientRequestId: 245867a5-0de9-4542-a9da-724577ab4102
+
+    ConnectionShutdownNotice:
+      name: connectionShutdown
+      title: Connection Shutdown
+      summary: Pushed before the connection is closed, carrying the deadline by which it must be re-established.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `connectionShutdown`.
+          data:
+            type: object
+            properties:
+              forceCloseInMs:
+                type: integer
+                description: Milliseconds from this message until the connection is closed.
+              statusCode:
+                type: integer
+                description: Always `200`.
+              ts:
+                type: integer
+                format: int64
+                description: When this notice was sent, in epoch milliseconds.
+            required: [forceCloseInMs, statusCode, ts]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: connectionShutdown
+            data:
+              forceCloseInMs: 60000
+              statusCode: 200
+              ts: 1785258083038
+
+    CreateOrderRequest:
+      name: createOrder
+      title: Create Order
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `createOrder`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Market name, only required when connecting with `market=ALL`
+              price:
+                type: string
+                description: Limit price; for market orders, expected price
+              quantity:
+                type: string
+                description: Order quantity
+              orderType:
+                type: string
+                enum: [buy, sell]
+                description: Order side
+              tradeType:
+                type: string
+                enum: [limit, market]
+                description: Order type
+              postOnly:
+                type: boolean
+                description: Maker-only creation flag
+              maxSlippage:
+                type: string
+                description: Market-only; `0 - 1` inclusive. `0` acts as IOC
+            required: [price, quantity, orderType, tradeType]
+        required: [message, content]
+      examples:
+        - name: LimitOrder
+          payload:
+            message: createOrder
+            content:
+              clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+              market: ETH-USDT
+              price: "2000.90"
+              quantity: "1.00"
+              orderType: buy
+              tradeType: limit
+              postOnly: false
+        - name: MarketOrder
+          payload:
+            message: createOrder
+            content:
+              clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+              market: ETH-USDT
+              price: "2000.90"
+              quantity: "1.00"
+              orderType: buy
+              tradeType: market
+              maxSlippage: "0.02"
+
+    CreateOrderAck:
+      name: createOrderAck
+      title: Create Order — Acknowledgment
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `createOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `202`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              apiQuotaUsed:
+                type: integer
+                description: API quota consumed; omitted when the request was not metered
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: createOrder
+            market: ETH-USDT
+            data:
+              statusCode: 202
+              body: order created, pending acceptance
+              order:
+                market: ETH-USDT
+                orderId: 01HZ5J70FCBNJAS7TVPVB4GAAG
+                orderType: buy
+                tradeType: limit
+                price: "3600"
+                quantity: "1"
+                filledQuantity: "0"
+                leverage: "1"
+                createdAt: 1746642892940
+                updatedAt: 1746642892940
+                orderStatus: pending
+                clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+                reduceOnly: false
+                postOnly: true
+              clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+              apiQuotaUsed: 1
+
+    CreateOrderConfirmation:
+      name: createOrderConfirmation
+      title: Create Order — Confirmation
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `createOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: createOrder
+            market: ETH-USDT
+            data:
+              statusCode: 200
+              body: order accepted
+              order:
+                market: ETH-USDT
+                orderId: 01HZ5J70FCBNJAS7TVPVB4GAAG
+                orderType: buy
+                tradeType: limit
+                price: "3600"
+                quantity: "1"
+                filledQuantity: "0"
+                leverage: "1"
+                createdAt: 1746642892940
+                updatedAt: 1746642892940
+                orderStatus: active
+                clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+                reduceOnly: false
+                postOnly: true
+              clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+
+    CreateOrderError:
+      name: createOrderError
+      title: Create Order — Error
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `createOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                enum: [400, 403, 408, 409, 429, 500]
+                description: Error status code
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              apiQuotaUsed:
+                type: integer
+                description: API quota consumed (absent when rejected before dispatch)
+              retryAfterSec:
+                type: integer
+                description: Present when throttled
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, market, data]
+      examples:
+        - name: MaxOpenOrders
+          payload:
+            resultType: createOrder
+            market: ETH-USDT
+            data:
+              statusCode: 400
+              body: maximum open orders count of 80 reached
+              order:
+                market: ETH-USDT
+                orderId: 01K9G4K19776J1CTA8YXA8AA5H
+                orderType: sell
+                tradeType: limit
+                price: "3467"
+                quantity: "0.1"
+                filledQuantity: "0"
+                leverage: "1"
+                createdAt: 1762552022311
+                updatedAt: 1762552022311
+                orderStatus: rejected
+                clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+                reduceOnly: false
+                postOnly: false
+              error:
+                slug: CREATE_ORDER_MAX_OPEN_ORDERS
+                code: "PRP-0104"
+              apiQuotaUsed: 1
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: InsufficientBalance
+          payload:
+            resultType: createOrder
+            market: ETH-USDT
+            data:
+              statusCode: 400
+              body: insufficient fund
+              error:
+                slug: CREATE_ORDER_INSUFFICIENT_BALANCE
+                code: "PRP-0101"
+              apiQuotaUsed: 1
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: ReceiveWindow
+          payload:
+            resultType: createOrder
+            market: ETH-USDT
+            data:
+              statusCode: 400
+              body: receive window exceeded, order rejected
+              error:
+                slug: CREATE_ORDER_RECEIVE_WINDOW
+                code: "PRP-0103"
+              apiQuotaUsed: 1
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: Banned
+          payload:
+            resultType: createOrder
+            market: ETH-USDT
+            data:
+              statusCode: 403
+              body: user is banned from creating orders due to max open order limit, try again after 300 seconds
+              error:
+                slug: CREATE_ORDER_BANNED
+                code: "PRP-0105"
+              apiQuotaUsed: 1
+              retryAfterSec: 300
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: ActivationTimeout
+          payload:
+            resultType: createOrder
+            market: ETH-USDT
+            data:
+              statusCode: 408
+              body: order activation timeout, pending order rejected
+              error:
+                slug: REQUEST_TIMEOUT
+                code: "SYS-0009"
+              apiQuotaUsed: 1
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: DuplicateRequest
+          payload:
+            resultType: createOrder
+            market: ETH-USDT
+            data:
+              statusCode: 409
+              body: duplicate clientRequestId, request already accepted
+              error:
+                slug: DUPLICATE_REQUEST
+                code: "SYS-0010"
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: RateLimited
+          payload:
+            resultType: createOrder
+            market: ETH-USDT
+            data:
+              statusCode: 429
+              body: api call rate limit exceeded
+              error:
+                slug: TOO_MANY_REQUESTS
+                code: "SYS-0003"
+              apiQuotaUsed: 10000
+              retryAfterSec: 5
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: InternalError
+          payload:
+            resultType: createOrder
+            market: ETH-USDT
+            data:
+              statusCode: 500
+              body: Internal Server Error
+              error:
+                slug: CREATE_ORDER_ERROR
+                code: "PRP-0100"
+              apiQuotaUsed: 1
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+
+    ModifyOrderRequest:
+      name: modifyOrder
+      title: Modify Order
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `modifyOrder`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Market name, only required when connecting with `market=ALL`
+              orderId:
+                type: string
+                description: Unique identifier for the original order
+              price:
+                type: string
+                description: New order price
+              quantity:
+                type: string
+                description: New order quantity
+            required: [orderId, price, quantity]
+        required: [message, content]
+      examples:
+        - payload:
+            message: modifyOrder
+            content:
+              clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+              market: ETH-USDT
+              orderId: 01KHPJAA0QBAJEXQJ941F7SWW7
+              price: "1999.00"
+              quantity: "1.00"
+
+    ModifyOrderAck:
+      name: modifyOrderAck
+      title: Modify Order — Acknowledgment
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `modifyOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `202`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              apiQuotaUsed:
+                type: integer
+                description: API quota consumed; omitted when the request was not metered
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: modifyOrder
+            market: ETH-USDT
+            data:
+              statusCode: 202
+              body: modifying order
+              order:
+                market: ETH-USDT
+                orderId: 01KHPJAA0QBAJEXQJ941F7SWW7
+                orderType: sell
+                tradeType: limit
+                price: "1999.00"
+                quantity: "1.00"
+                filledQuantity: "0"
+                leverage: "10"
+                createdAt: 1771357677591
+                updatedAt: 1771357677701
+                orderStatus: modifying
+                clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+                reduceOnly: false
+                postOnly: false
+              clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+              apiQuotaUsed: 5
+
+    ModifyOrderConfirmation:
+      name: modifyOrderConfirmation
+      title: Modify Order — Confirmation
+      summary: >
+        The original order is cancelled and its replacement, under a new
+        `orderId`, is on the book. The `order` is the replacement.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `modifyOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: modifyOrder
+            market: ETH-USDT
+            data:
+              statusCode: 200
+              body: order modified
+              order:
+                market: ETH-USDT
+                orderId: 01KHPJAA0QBAJEXQJ941F7SWW7
+                orderType: sell
+                tradeType: limit
+                price: "2000.00"
+                quantity: "2.00"
+                filledQuantity: "0"
+                leverage: "10"
+                createdAt: 1771357677591
+                updatedAt: 1771357677701
+                orderStatus: active
+                clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+                reduceOnly: false
+                postOnly: false
+                avgFillPrice: "0"
+              clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+
+    ModifyOrderError:
+      name: modifyOrderError
+      title: Modify Order — Error
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `modifyOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                enum: [400, 403, 404, 409, 429, 500]
+                description: Error status code
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              apiQuotaUsed:
+                type: integer
+                description: API quota consumed (absent when rejected before dispatch)
+              retryAfterSec:
+                type: integer
+                description: Present when throttled
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, market, data]
+      examples:
+        - name: WouldMatch
+          payload:
+            resultType: modifyOrder
+            market: ETH-USDT
+            data:
+              statusCode: 400
+              body: modified order would immediately match, order not modified
+              order:
+                market: ETH-USDT
+                orderId: 01KHPJD4JARPZJVN44BKVMMM66
+                orderType: sell
+                tradeType: limit
+                price: "1999"
+                quantity: "1"
+                filledQuantity: "0"
+                leverage: "10"
+                createdAt: 1771357770314
+                updatedAt: 1771357770314
+                orderStatus: active
+                clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+                reduceOnly: false
+                postOnly: true
+              error:
+                slug: MODIFY_ORDER_WOULD_MATCH
+                code: "PRP-0309"
+              clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+        - name: NotFound
+          payload:
+            resultType: modifyOrder
+            market: ETH-USDT
+            data:
+              statusCode: 404
+              body: order not found; it may already be cancelled or filled
+              error:
+                slug: MODIFY_ORDER_NOT_FOUND_ERROR
+                code: "PRP-0303"
+              clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+        - name: Conflict
+          payload:
+            resultType: modifyOrder
+            market: ETH-USDT
+            data:
+              statusCode: 409
+              body: order cannot be modified at the moment, please try again
+              error:
+                slug: MODIFY_ORDER_CONFLICT_ERROR
+                code: "PRP-0304"
+              clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+        - name: Banned
+          payload:
+            resultType: modifyOrder
+            market: ETH-USDT
+            data:
+              statusCode: 403
+              body: user is banned from creating orders due to max open order limit, try again after 300 seconds
+              error:
+                slug: CREATE_ORDER_BANNED
+                code: "PRP-0105"
+              apiQuotaUsed: 1
+              retryAfterSec: 300
+              clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+        - name: RateLimited
+          payload:
+            resultType: modifyOrder
+            market: ETH-USDT
+            data:
+              statusCode: 429
+              body: api call rate limit exceeded
+              error:
+                slug: TOO_MANY_REQUESTS
+                code: "SYS-0003"
+              apiQuotaUsed: 10000
+              retryAfterSec: 5
+              clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+        - name: InternalError
+          payload:
+            resultType: modifyOrder
+            market: ETH-USDT
+            data:
+              statusCode: 500
+              body: Internal Server Error
+              error:
+                slug: MODIFY_ORDER_ERROR
+                code: "PRP-0300"
+              apiQuotaUsed: 1
+              clientRequestId: e1669c3d-a31b-43e3-8239-03da43c9ca73
+
+    CancelOrderRequest:
+      name: cancelOrder
+      title: Cancel Order By ID
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `cancelOrder`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Market name, only required when connecting with `market=ALL`
+              orderId:
+                type: string
+                description: Target order identifier
+              cancelBy:
+                type: string
+                description: Cancellation mode; currently `orderId`
+            required: [orderId, cancelBy]
+        required: [message, content]
+      examples:
+        - payload:
+            message: cancelOrder
+            content:
+              clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+              market: ETH-USDT
+              orderId: 01HH0X2VD6R0CJE4X0P0D1NQ11
+              cancelBy: orderId
+
+    CancelOrderAck:
+      name: cancelOrderAck
+      title: Cancel Order — Acknowledgment
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `cancelOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `202`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              apiQuotaUsed:
+                type: integer
+                description: API quota consumed; omitted when the request was not metered
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: cancelOrder
+            market: ETH-USDT
+            data:
+              statusCode: 202
+              body: cancelling order
+              order:
+                market: ETH-USDT
+                orderId: 01HZ5J70FCBNJAS7TVPVB4GAAG
+                orderType: buy
+                tradeType: limit
+                price: "3601"
+                quantity: "1"
+                filledQuantity: "0.5"
+                leverage: "1"
+                createdAt: 1717100052972
+                updatedAt: 1717100393492
+                orderStatus: cancelling
+                clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+                reduceOnly: false
+                postOnly: false
+                avgFillPrice: "3601"
+              clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+              apiQuotaUsed: 1
+
+    CancelOrderConfirmation:
+      name: cancelOrderConfirmation
+      title: Cancel Order — Confirmation
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `cancelOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: cancelOrder
+            market: ETH-USDT
+            data:
+              statusCode: 200
+              body: order cancelled
+              order:
+                market: ETH-USDT
+                orderId: 01HZ5J70FCBNJAS7TVPVB4GAAG
+                orderType: buy
+                tradeType: limit
+                price: "3601"
+                quantity: "1"
+                filledQuantity: "0.5"
+                leverage: "1"
+                createdAt: 1717100052972
+                updatedAt: 1717100393492
+                orderStatus: cancelled
+                clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+                reduceOnly: false
+                postOnly: false
+                avgFillPrice: "3601"
+              clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+
+    CancelOrderError:
+      name: cancelOrderError
+      title: Cancel Order — Error
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `cancelOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                enum: [400, 404, 409, 429, 500]
+                description: Error status code
+              body:
+                type: string
+                description: Status message
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              apiQuotaUsed:
+                type: integer
+                description: API quota consumed (absent when rejected before dispatch)
+              retryAfterSec:
+                type: integer
+                description: Present when throttled
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, market, data]
+      examples:
+        - name: InvalidRequest
+          payload:
+            resultType: cancelOrder
+            market: ETH-USDT
+            data:
+              statusCode: 400
+              body: Invalid request
+              error:
+                slug: CANCEL_ORDER_ERROR
+                code: "PRP-0200"
+              apiQuotaUsed: 1
+              clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+        - name: NotFound
+          payload:
+            resultType: cancelOrder
+            market: ETH-USDT
+            data:
+              statusCode: 404
+              body: order not found
+              error:
+                slug: NOT_FOUND
+                code: "SYS-0007"
+              apiQuotaUsed: 1
+              clientRequestId: 505c8b64-3bcc-4871-9b4d-fbe8c42926c3
+        - name: Conflict
+          payload:
+            resultType: cancelOrder
+            market: ETH-USDT
+            data:
+              statusCode: 409
+              body: order cannot be cancelled at the moment, please try again
+              error:
+                slug: CANCEL_ORDER_CONFLICT_ERROR
+                code: "PRP-0201"
+              apiQuotaUsed: 1
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: AlreadyCancelling
+          payload:
+            resultType: cancelOrder
+            market: ETH-USDT
+            data:
+              statusCode: 409
+              body: order is already being cancelled
+              error:
+                slug: CANCEL_ORDER_ALREADY_CANCELLING
+                code: "PRP-0202"
+              apiQuotaUsed: 1
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: NotCancellable
+          payload:
+            resultType: cancelOrder
+            market: ETH-USDT
+            data:
+              statusCode: 409
+              body: "invalid order status 'filled' for cancel"
+              error:
+                slug: CANCEL_ORDER_NOT_CANCELLABLE
+                code: "PRP-0203"
+              apiQuotaUsed: 1
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: RateLimited
+          payload:
+            resultType: cancelOrder
+            market: ETH-USDT
+            data:
+              statusCode: 429
+              body: api call rate limit exceeded
+              error:
+                slug: TOO_MANY_REQUESTS
+                code: "SYS-0003"
+              apiQuotaUsed: 10000
+              retryAfterSec: 5
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+        - name: InternalError
+          payload:
+            resultType: cancelOrder
+            market: ETH-USDT
+            data:
+              statusCode: 500
+              body: Internal Server Error
+              error:
+                slug: CANCEL_ORDER_ERROR
+                code: "PRP-0200"
+              apiQuotaUsed: 1
+              clientRequestId: 2f6635e5-bdab-4fbc-8e2e-21252d2219dc
+
+    UpdateMarginRequest:
+      name: updateMargin
+      title: Update Margin
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `updateMargin`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Market name, only required when connecting with `market=ALL`
+              margin:
+                type: string
+                description: Absolute target value for `isolatedPositionMargin` after the update
+            required: [margin]
+        required: [message, content]
+      examples:
+        - payload:
+            message: updateMargin
+            content:
+              clientRequestId: 79b89ec3-b89b-4e9e-aff3-9a6ff0184009
+              market: BTC-USDT
+              margin: "201"
+
+    UpdateMarginAck:
+      name: updateMarginAck
+      title: Update Margin — Acknowledgment
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `updateMargin`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `202`.
+              body:
+                type: string
+                description: Status message
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              apiQuotaUsed:
+                type: integer
+                description: API quota consumed; omitted when the request was not metered
+            required: [statusCode, body]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: updateMargin
+            market: BTC-USDT
+            data:
+              statusCode: 202
+              body: margin update in progress, pending approval
+              clientRequestId: 79b89ec3-b89b-4e9e-aff3-9a6ff0184009
+              apiQuotaUsed: 1
+
+    UpdateMarginConfirmation:
+      name: updateMarginConfirmation
+      title: Update Margin — Confirmation
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `updateMargin`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Status message
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body]
+        required: [resultType, market, data]
+      examples:
+        - name: Updated
+          payload:
+            resultType: updateMargin
+            market: BTC-USDT
+            data:
+              statusCode: 200
+              body: margin updated successfully
+              clientRequestId: 79b89ec3-b89b-4e9e-aff3-9a6ff0184009
+        - name: NoopSameMargin
+          summary: >
+            If the requested margin matches the current isolatedPositionMargin,
+            this 200 is returned directly without a prior 202 acknowledgment.
+          payload:
+            resultType: updateMargin
+            market: BTC-USDT
+            data:
+              statusCode: 200
+              body: margin is the same as the current margin, no update needed
+              clientRequestId: 79b89ec3-b89b-4e9e-aff3-9a6ff0184009
+
+    UpdateMarginError:
+      name: updateMarginError
+      title: Update Margin — Error
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `updateMargin`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                enum: [400, 409, 429, 500]
+                description: Error status code
+              body:
+                type: string
+                description: Status message
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              apiQuotaUsed:
+                type: integer
+                description: API quota consumed; omitted when the request was not metered
+              retryAfterSec:
+                type: integer
+                description: Present when throttled
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, error]
+        required: [resultType, market, data]
+      examples:
+        - name: BelowMinimumMargin
+          payload:
+            resultType: updateMargin
+            market: BTC-USDT
+            data:
+              statusCode: 400
+              body: margin decrease below minimum required margin
+              clientRequestId: acd02c47-3e8a-41af-aecb-9b60177554fd
+              error:
+                slug: UPDATE_MARGIN_BELOW_MINIMUM
+                code: "PRP-0804"
+        - name: Conflict
+          payload:
+            resultType: updateMargin
+            market: BTC-USDT
+            data:
+              statusCode: 409
+              body: position margin was updated by another request, please retry
+              clientRequestId: acd02c47-3e8a-41af-aecb-9b60177554fd
+              error:
+                slug: UPDATE_MARGIN_CONFLICT
+                code: "PRP-0805"
+        - name: RateLimited
+          payload:
+            resultType: updateMargin
+            market: BTC-USDT
+            data:
+              statusCode: 429
+              body: api call rate limit exceeded
+              error:
+                slug: TOO_MANY_REQUESTS
+                code: "SYS-0003"
+              apiQuotaUsed: 10000
+              retryAfterSec: 5
+              clientRequestId: 79b89ec3-b89b-4e9e-aff3-9a6ff0184009
+        - name: InternalError
+          payload:
+            resultType: updateMargin
+            market: BTC-USDT
+            data:
+              statusCode: 500
+              body: Internal Server Error
+              error:
+                slug: UPDATE_MARGIN_ERROR
+                code: "PRP-0800"
+              apiQuotaUsed: 1
+              clientRequestId: 79b89ec3-b89b-4e9e-aff3-9a6ff0184009
+
+    CompleteFillNotification:
+      name: completeFillOrder
+      title: Order Filled — Complete Fill
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `completeFillOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: completeFillOrder
+            market: BTC-USDT
+            data:
+              statusCode: 200
+              body: order filled
+              order:
+                market: BTC-USDT
+                orderId: 01JGPRJC7KHY8GP4FT6WRQG193
+                orderType: sell
+                tradeType: limit
+                price: "98491.86060236"
+                quantity: "0"
+                filledQuantity: "1"
+                leverage: "1"
+                createdAt: 1735930753267
+                updatedAt: 1735930754142
+                orderStatus: active
+                clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+                reduceOnly: false
+                postOnly: false
+                avgFillPrice: "98491.86060236"
+
+    PartialFillNotification:
+      name: partialFillOrder
+      title: Order Filled — Partial Fill
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `partialFillOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `200`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+            required: [statusCode, body, order]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: partialFillOrder
+            market: ETH-USDT
+            data:
+              statusCode: 200
+              body: order partially filled
+              order:
+                market: ETH-USDT
+                orderId: 01JGPS25KMV7R404DY4WEMG6GD
+                orderType: buy
+                tradeType: limit
+                price: "3600"
+                quantity: "9.5"
+                filledQuantity: "0.04"
+                leverage: "1"
+                createdAt: 1735931270772
+                updatedAt: 1735931616903
+                orderStatus: active
+                clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+                reduceOnly: false
+                postOnly: true
+                avgFillPrice: "3600"
+
+    RejectOrderNotification:
+      name: rejectOrder
+      title: Order Rejected
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `rejectOrder`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                description: Always `400`.
+              body:
+                type: string
+                description: Status message
+              order:
+                $ref: '#/components/schemas/Order'
+              error:
+                $ref: '#/components/schemas/ErrorDetail'
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+            required: [statusCode, body, order, error]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: rejectOrder
+            market: BTC-USDT
+            data:
+              statusCode: 400
+              body: Post-only order rejected as it would have matched immediately
+              order:
+                market: BTC-USDT
+                orderId: 01JGPRJC7KHY8GP4FT6WRQG193
+                orderType: sell
+                tradeType: limit
+                price: "98491.86060236"
+                quantity: "15.83767529"
+                filledQuantity: "0"
+                leverage: "1"
+                createdAt: 1746643403628
+                updatedAt: 1746643403696
+                orderStatus: rejected
+                clientRequestId: 0835bf3e-4a20-41f0-908d-8213f2b7a285
+                reduceOnly: false
+                postOnly: true
+              error:
+                slug: ORDER_REJECTED_POST_ONLY
+                code: "PRP-0601"
+              clientRequestId: b9fe6677-12c3-4d43-894c-370236b94023
+
+    SessionBackfillNotification:
+      name: sessionBackfill
+      title: Session Backfill
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `sessionBackfill`.
+          data:
+            type: object
+            properties:
+              sessionId:
+                type: string
+                description: Echoes the `sessionId` query parameter supplied on the connection.
+              resumed:
+                type: boolean
+                description: >
+                  `true` if this session continues a live position from a
+                  prior connection with the same `sessionId` that reconnected
+                  within the 1-minute backfill window. `false` for a new
+                  `sessionId`, or a reused one outside that window — no
+                  backfill occurs, and local order state must be reconciled
+                  from scratch via HTTP endpoints or `emit` requests.
+              from:
+                type: integer
+                format: int64
+                description: >
+                  Unix timestamp (ms) marking the start of the backfill
+                  window. `0` when `resumed` is `false`.
+              to:
+                type: integer
+                format: int64
+                description: Unix timestamp (ms) marking the end of the backfill window.
+              events:
+                type: integer
+                description: Total number of missed order events backfilled across all markets.
+              backfilledMarkets:
+                type: array
+                description: Markets whose missed events were fully backfilled.
+                items:
+                  type: string
+              expiredMarkets:
+                type: array
+                description: >
+                  Markets that accumulated more than 500 missed events;
+                  nothing was backfilled for them.
+                items:
+                  type: string
+            required: [sessionId, resumed, from, to, events, backfilledMarkets, expiredMarkets]
+        required: [resultType, data]
+      examples:
+        - payload:
+            resultType: sessionBackfill
+            data:
+              sessionId: d785d51c-054e-4e33-9738-92d04ede9fab
+              resumed: true
+              from: 1784834389615
+              to: 1784834449615
+              events: 6
+              backfilledMarkets: [BTC-USDT, ETH-USDT]
+              expiredMarkets: []
+
+    CompletedOrdersDelta:
+      name: completedOrdersDelta
+      title: Account Trades Delta
+      summary: >
+        Pushed whenever new trades are executed on your account, across all
+        markets. Each frame carries the fills of one market.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `completedOrdersDelta`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: array
+            description: Batch of completed order entries
+            items:
+              $ref: '#/components/schemas/AccountTradeFill'
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: completedOrdersDelta
+            market: BTC-USDT
+            data:
+              - market: BTC-USDT
+                orderId: 01JSG88WSP6MWEXBNXT0F43S59
+                matchId: 65284509-5284-4f64-9b80-ed6aa9819b9b
+                orderType: buy
+                tradeType: market
+                executionType: taker
+                fillType: partial
+                price: "92911.48605"
+                quantity: "23.4"
+                originalQuantity: "30"
+                leverage: "1"
+                fees: "2174.12877357"
+                createdAt: 1745436937022
+                updatedAt: 1745436937055
+                triggerType: none
+                triggerPrice: "0"
+                triggerCreatedAt: 0
+              - market: BTC-USDT
+                orderId: 01JSG88WSP6MWEXBNXT0F43S59
+                matchId: 95284509-5284-4f64-9b80-ed6aa9819b9a
+                orderType: buy
+                tradeType: market
+                executionType: taker
+                fillType: complete
+                price: "92911.50"
+                quantity: "6.6"
+                originalQuantity: "30"
+                leverage: "1"
+                fees: "613.21590"
+                createdAt: 1745436937022
+                updatedAt: 1745436937056
+                triggerType: none
+                triggerPrice: "0"
+                triggerCreatedAt: 0
+
+    EmitPublicCompletedOrdersRequest:
+      name: emitPublicCompletedOrders
+      title: Emit Public Completed Orders
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitPublicCompletedOrders`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Market name, only required when connecting with `market=ALL`
+        required: [message]
+      examples:
+        - payload:
+            message: emitPublicCompletedOrders
+            content:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+              market: ETH-USDT
+
+    PublicCompletedOrdersResponse:
+      name: publicCompletedOrders
+      title: Public Trades Snapshot
+      summary: Response to `emitPublicCompletedOrders`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `publicCompletedOrders`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              orders:
+                type: array
+                description: Snapshot of recent trade executions
+                items:
+                  $ref: '#/components/schemas/PublicTradeExecution'
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [orders, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: publicCompletedOrders
+            market: ETH-USDT
+            data:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+              orders:
+                - executionType: taker
+                  matchId: d65966ab-109c-491f-bb55-a6ccd0453153
+                  orderType: buy
+                  price: "3181.41"
+                  quantity: "0.01"
+                  updatedAt: 1767762904115
+                - executionType: maker
+                  matchId: 9eb783a6-7abc-4e94-9d9c-fd404e7580eb
+                  orderType: sell
+                  price: "3181.42"
+                  quantity: "0.02"
+                  updatedAt: 1767762810250
+              statusCode: 200
+
+    PublicCompletedOrdersDelta:
+      name: publicCompletedOrdersDelta
+      title: Public Trades Delta
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `publicCompletedOrdersDelta`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              orders:
+                type: array
+                description: New trade executions since last update
+                items:
+                  $ref: '#/components/schemas/PublicTradeExecution'
+              statusCode:
+                type: integer
+                description: Always `200`.
+            required: [orders, statusCode]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: publicCompletedOrdersDelta
+            market: ETH-USDT
+            data:
+              orders:
+                - executionType: taker
+                  matchId: 9eb783a6-7abc-4e94-9d9c-fd404e7580eb
+                  orderType: buy
+                  price: "3181.41"
+                  quantity: "0.01"
+                  updatedAt: 1767762810250
+                - executionType: maker
+                  matchId: d65966ab-109c-491f-bb55-a6ccd0453153
+                  orderType: sell
+                  price: "3181.42"
+                  quantity: "0.02"
+                  updatedAt: 1767762904115
+              statusCode: 200
+
+    EmitPublicOrderBookRequest:
+      name: emitPublicOrderBook
+      title: Emit Public Order Book
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Always `emitPublicOrderBook`.
+          content:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                format: uuid
+                description: Client-generated UUID for correlation
+              market:
+                type: string
+                description: Market name, only required when connecting with `market=ALL`
+        required: [message]
+      examples:
+        - payload:
+            message: emitPublicOrderBook
+            content:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+              market: ETH-USDT
+
+    PublicOrderBookResponse:
+      name: publicOrderBook
+      title: Order Book Snapshot
+      summary: Response to `emitPublicOrderBook`.
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `publicOrderBook`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              clientRequestId:
+                type: string
+                description: Client-generated UUID for correlation
+              orders:
+                type: array
+                description: Full order book entries
+                items:
+                  $ref: '#/components/schemas/OrderBookLevel'
+              statusCode:
+                type: integer
+                description: Always `200`.
+              ts:
+                type: integer
+                format: int64
+                description: Snapshot timestamp in milliseconds since epoch
+            required: [orders, statusCode, ts]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: publicOrderBook
+            market: ETH-USDT
+            data:
+              clientRequestId: 4cc68b60-ed2d-42aa-a21e-cb5486f8fd1a
+              orders:
+                - orderType: buy
+                  price: "3181.39"
+                  quantity: "38.98"
+                - orderType: sell
+                  price: "3181.41"
+                  quantity: "38.92"
+              statusCode: 200
+              ts: 1772576154169
+
+    PublicOrderBookDelta:
+      name: publicOrderBookDelta
+      title: Order Book Delta
+      payload:
+        type: object
+        properties:
+          resultType:
+            type: string
+            description: Always `publicOrderBookDelta`.
+          market:
+            type: string
+            description: Market name
+          data:
+            type: object
+            properties:
+              orders:
+                type: array
+                description: Incremental order book changes
+                items:
+                  $ref: '#/components/schemas/OrderBookLevel'
+              statusCode:
+                type: integer
+                description: Always `200`.
+              ts:
+                type: integer
+                format: int64
+                description: Update timestamp in milliseconds since epoch
+            required: [orders, statusCode, ts]
+        required: [resultType, market, data]
+      examples:
+        - payload:
+            resultType: publicOrderBookDelta
+            market: ETH-USDT
+            data:
+              orders:
+                - orderType: sell
+                  price: "3181.41"
+                  quantity: "38.92"
+                - orderType: buy
+                  price: "3181.39"
+                  quantity: "38.98"
+              statusCode: 200
+              ts: 1772576154169

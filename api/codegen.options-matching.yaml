@@ -1,0 +1,4 @@
+package: optionsmatching
+output: internal/wire/optionsmatching/models.gen.go
+generate:
+  models: true

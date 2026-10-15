@@ -1,0 +1,1271 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Options Matching API",
+    "version": "1.0.0",
+    "description": "Order management endpoints for Rails Options. Base URLs vary by environment — see the Environments page. Authorize with the access token obtained from the Auth API."
+  },
+  "servers": [
+    {
+      "url": "https://api-options.sandbox.rails.xyz"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/matching/orders/create": {
+      "post": {
+        "summary": "Create Order",
+        "operationId": "createOptionsOrder",
+        "description": "Submits a new order to the matching engine. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              },
+              "example": {
+                "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
+                "order": {
+                  "contract": "BTC-7FEB26-100000-C",
+                  "orderType": "buy",
+                  "tradeType": "limit",
+                  "price": "1250.5",
+                  "quantity": "2",
+                  "postOnly": false
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateOrderQueued"
+                },
+                "example": {
+                  "queued": true,
+                  "accepted": false,
+                  "body": "order queued, pending acceptance",
+                  "action": "create",
+                  "messageId": "1770000000000-0",
+                  "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
+                  "contract": "BTC-7FEB26-100000-C",
+                  "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "slug": "BAD_REQUEST",
+                    "code": "SYS-0006"
+                  },
+                  "message": "contract is required"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "502": {
+            "$ref": "#/components/responses/MatchingUnavailableOnSubmit"
+          },
+          "504": {
+            "$ref": "#/components/responses/MatchingTimeoutOnSubmit"
+          }
+        }
+      }
+    },
+    "/v1/matching/orders/modify": {
+      "post": {
+        "summary": "Modify Order",
+        "operationId": "modifyOptionsOrder",
+        "description": "Replaces the price and quantity of an open order. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifyOrderRequest"
+              },
+              "example": {
+                "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
+                "order": {
+                  "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ",
+                  "contract": "BTC-7FEB26-100000-C",
+                  "price": "1300",
+                  "quantity": "2"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModifyOrderQueued"
+                },
+                "example": {
+                  "queued": true,
+                  "accepted": false,
+                  "body": "order queued, pending acceptance",
+                  "action": "modify",
+                  "messageId": "1770000000000-0",
+                  "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
+                  "contract": "BTC-7FEB26-100000-C",
+                  "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "slug": "BAD_REQUEST",
+                    "code": "SYS-0006"
+                  },
+                  "message": "orderId is required for modify"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "502": {
+            "$ref": "#/components/responses/MatchingUnavailableOnSubmit"
+          },
+          "504": {
+            "$ref": "#/components/responses/MatchingTimeoutOnSubmit"
+          }
+        }
+      }
+    },
+    "/v1/matching/orders/cancel": {
+      "post": {
+        "summary": "Cancel Order",
+        "operationId": "cancelOptionsOrder",
+        "description": "Cancels an open order. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelOrderRequest"
+              },
+              "example": {
+                "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
+                "cancel": {
+                  "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ",
+                  "contract": "BTC-7FEB26-100000-C"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelOrderQueued"
+                },
+                "example": {
+                  "queued": true,
+                  "accepted": false,
+                  "body": "order queued, pending acceptance",
+                  "action": "cancel",
+                  "messageId": "1770000000000-0",
+                  "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
+                  "contract": "BTC-7FEB26-100000-C",
+                  "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "slug": "BAD_REQUEST",
+                    "code": "SYS-0006"
+                  },
+                  "message": "orderId is required"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "502": {
+            "$ref": "#/components/responses/MatchingUnavailableOnSubmit"
+          },
+          "504": {
+            "$ref": "#/components/responses/MatchingTimeoutOnSubmit"
+          }
+        }
+      }
+    },
+    "/v1/matching/orders/cancel-all": {
+      "post": {
+        "summary": "Cancel All Orders",
+        "operationId": "cancelAllOptionsOrders",
+        "description": "Cancels every open order of the caller, or only those in one contract. Each queued cancel settles on its own. The call is rate limited once, however many orders it cancels, under a limit separate from single cancels. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelAllOrdersRequest"
+              },
+              "example": {
+                "clientRequestId": "c0a0d2d0-6b1e-4f3a-8d2b-5e7f9a1b2c3d",
+                "contract": "BTC-7FEB26-100000-C"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelAllOrdersQueued"
+                },
+                "example": {
+                  "action": "cancelAll",
+                  "clientRequestId": "c0a0d2d0-6b1e-4f3a-8d2b-5e7f9a1b2c3d",
+                  "contract": "BTC-7FEB26-100000-C",
+                  "count": 2,
+                  "cancels": [
+                    {
+                      "queued": true,
+                      "accepted": false,
+                      "body": "order queued, pending acceptance",
+                      "action": "cancel",
+                      "messageId": "1770000000000-0",
+                      "clientRequestId": "2b6c8e1a-0d4f-4e7b-9c3a-1f5d7e9b0a2c",
+                      "contract": "BTC-7FEB26-100000-C",
+                      "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ"
+                    },
+                    {
+                      "queued": true,
+                      "accepted": false,
+                      "body": "order queued, pending acceptance",
+                      "action": "cancel",
+                      "messageId": "1770000000000-1",
+                      "clientRequestId": "7d3e5f1b-2a4c-4b6d-8e0f-9a1b3c5d7e9f",
+                      "contract": "BTC-7FEB26-100000-C",
+                      "orderId": "01JRQM8H5XYZABCDEFGHJKMNPR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "slug": "BAD_REQUEST",
+                    "code": "SYS-0006"
+                  },
+                  "message": "clientRequestId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "502": {
+            "$ref": "#/components/responses/MatchingUnavailableOnSubmit"
+          },
+          "504": {
+            "$ref": "#/components/responses/MatchingTimeoutOnSubmit"
+          }
+        }
+      }
+    },
+    "/v1/matching/orders/open": {
+      "get": {
+        "summary": "Get Open Orders",
+        "operationId": "getOptionsOpenOrders",
+        "description": "Returns your resting orders across every contract, most recently created first, paged.",
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Items per page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 200
+            }
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "description": "Cursor for the next page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenOrders"
+                },
+                "example": {
+                  "orders": [
+                    {
+                      "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ",
+                      "contract": "BTC-7FEB26-100000-C",
+                      "side": "buy",
+                      "type": "limit",
+                      "price": "1250.5",
+                      "quantity": "2",
+                      "filledQuantity": "1",
+                      "avgFillPrice": "1249",
+                      "leverage": "0",
+                      "reduceOnly": false,
+                      "postOnly": false,
+                      "createdAt": 1770000000000,
+                      "updatedAt": 1770000001500,
+                      "status": "open"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid pagination parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "slug": "BAD_REQUEST",
+                    "code": "SYS-0006"
+                  },
+                  "message": "pageSize must be between 1 and 1000"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "502": {
+            "$ref": "#/components/responses/MatchingUnavailable"
+          },
+          "504": {
+            "$ref": "#/components/responses/MatchingTimeout"
+          }
+        }
+      }
+    },
+    "/v1/matching/orders/{orderId}": {
+      "get": {
+        "summary": "Get Order Status",
+        "operationId": "getOptionsOrderStatus",
+        "description": "Returns the current state of one order. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the order. Example value: `01JRQM8H5XYZABCDEFGHJKMNPQ`. You can get this value from the create, modify or cancel response.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderStatus"
+                },
+                "example": {
+                  "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
+                  "status": "open",
+                  "body": "order accepted",
+                  "action": "create",
+                  "contract": "BTC-7FEB26-100000-C",
+                  "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ",
+                  "quantity": "2",
+                  "filledQuantity": "1",
+                  "remainingQuantity": "1",
+                  "updatedAt": 1770000001500
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "slug": "BAD_REQUEST",
+                    "code": "SYS-0006"
+                  },
+                  "message": "orderId is required"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "slug": "NOT_FOUND",
+                    "code": "SYS-0007"
+                  },
+                  "message": "order not found"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "502": {
+            "$ref": "#/components/responses/MatchingUnavailable"
+          },
+          "504": {
+            "$ref": "#/components/responses/MatchingTimeout"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "slug": "UNAUTHORIZED",
+                "code": "SYS-0001"
+              },
+              "message": "unauthorized"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "slug": "FORBIDDEN",
+                "code": "SYS-0008"
+              },
+              "message": "read-only token cannot create orders"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "",
+        "headers": {
+          "Retry-After": {
+            "description": "Number of seconds to wait before making another request (429 responses only).",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "description": "An object containing error details.",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "description": "A short string identifier for the error type."
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "A string code representing the error."
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "code"
+                  ]
+                },
+                "message": {
+                  "type": "string",
+                  "description": "A human-readable message describing the error."
+                },
+                "key": {
+                  "type": "string",
+                  "description": "Identifier of the limit the request was charged against."
+                },
+                "retry_after_seconds": {
+                  "type": "integer",
+                  "description": "Seconds to wait before retrying; the same value as the `Retry-After` header."
+                },
+                "remaining": {
+                  "type": "number",
+                  "format": "double",
+                  "description": "Requests left in the current window."
+                }
+              },
+              "required": [
+                "error",
+                "message",
+                "retry_after_seconds",
+                "remaining"
+              ]
+            },
+            "example": {
+              "error": {
+                "slug": "TOO_MANY_REQUESTS",
+                "code": "SYS-0003"
+              },
+              "message": "rate limit exceeded",
+              "key": "options-read-orders",
+              "retry_after_seconds": 3,
+              "remaining": 0
+            }
+          }
+        }
+      },
+      "MatchingUnavailableOnSubmit": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "slug": "SERVICE_UNAVAILABLE",
+                "code": "SYS-0004"
+              },
+              "message": "matching service unavailable"
+            }
+          }
+        }
+      },
+      "MatchingTimeoutOnSubmit": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "slug": "SERVICE_UNAVAILABLE",
+                "code": "SYS-0004"
+              },
+              "message": "matching service timed out"
+            }
+          }
+        }
+      },
+      "MatchingUnavailable": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "slug": "SERVICE_UNAVAILABLE",
+                "code": "SYS-0004"
+              },
+              "message": "matching service unavailable"
+            }
+          }
+        }
+      },
+      "MatchingTimeout": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "slug": "SERVICE_UNAVAILABLE",
+                "code": "SYS-0004"
+              },
+              "message": "matching service timed out"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "CreateOrderRequest": {
+        "type": "object",
+        "properties": {
+          "clientRequestId": {
+            "type": "string",
+            "format": "uuid",
+            "x-go-type": "string",
+            "description": "Client-generated UUID for correlation."
+          },
+          "order": {
+            "$ref": "#/components/schemas/CreateOrderPayload"
+          }
+        },
+        "required": [
+          "order"
+        ]
+      },
+      "CreateOrderPayload": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "Unique identifier for the order. Generated if omitted."
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name. Example value: `BTC-7FEB26-100000-C`. To get all tradable contracts, call the [Get Contracts](/latest/options/rest-api/get-contracts) endpoint."
+          },
+          "orderType": {
+            "type": "string",
+            "description": "Order side.",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "tradeType": {
+            "type": "string",
+            "description": "Order type.",
+            "enum": [
+              "limit",
+              "market"
+            ]
+          },
+          "price": {
+            "type": "string",
+            "description": "Limit price; for market orders, expected price."
+          },
+          "quantity": {
+            "type": "string",
+            "description": "Order quantity."
+          },
+          "postOnly": {
+            "type": "boolean",
+            "description": "Maker-only creation flag."
+          },
+          "reduceOnly": {
+            "type": "boolean",
+            "description": "Reduce-only flag. When `true`, the order can only reduce an existing position."
+          },
+          "maxSlippage": {
+            "type": "string",
+            "description": "Market-only; `0 - 1` inclusive. Defaults to `0.1`. `0` acts as IOC."
+          }
+        },
+        "required": [
+          "contract",
+          "orderType",
+          "tradeType",
+          "price",
+          "quantity"
+        ]
+      },
+      "ModifyOrderRequest": {
+        "type": "object",
+        "properties": {
+          "clientRequestId": {
+            "type": "string",
+            "format": "uuid",
+            "x-go-type": "string",
+            "description": "Client-generated UUID for correlation."
+          },
+          "order": {
+            "$ref": "#/components/schemas/ModifyOrderPayload"
+          }
+        },
+        "required": [
+          "order"
+        ]
+      },
+      "ModifyOrderPayload": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "Unique identifier for the original order."
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name. Example value: `BTC-7FEB26-100000-C`."
+          },
+          "price": {
+            "type": "string",
+            "description": "New order price."
+          },
+          "quantity": {
+            "type": "string",
+            "description": "New order quantity."
+          }
+        },
+        "required": [
+          "orderId",
+          "contract",
+          "price",
+          "quantity"
+        ]
+      },
+      "CancelOrderRequest": {
+        "type": "object",
+        "properties": {
+          "clientRequestId": {
+            "type": "string",
+            "format": "uuid",
+            "x-go-type": "string",
+            "description": "Client-generated UUID for correlation."
+          },
+          "cancel": {
+            "$ref": "#/components/schemas/CancelTarget"
+          }
+        },
+        "required": [
+          "cancel"
+        ]
+      },
+      "CancelTarget": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "Target order identifier."
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name. Example value: `BTC-7FEB26-100000-C`."
+          }
+        },
+        "required": [
+          "orderId",
+          "contract"
+        ]
+      },
+      "CreateOrderQueued": {
+        "type": "object",
+        "properties": {
+          "queued": {
+            "type": "boolean",
+            "description": "Always `true`."
+          },
+          "accepted": {
+            "type": "boolean",
+            "description": "Always `false`."
+          },
+          "body": {
+            "type": "string",
+            "description": "Always `order queued, pending acceptance`."
+          },
+          "action": {
+            "type": "string",
+            "description": "Always `create`."
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Identifier assigned to the queued request."
+          },
+          "clientRequestId": {
+            "type": "string",
+            "description": "Client-generated UUID for correlation."
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name."
+          },
+          "orderId": {
+            "type": "string",
+            "description": "Unique identifier for the order."
+          }
+        },
+        "required": [
+          "queued",
+          "accepted",
+          "action",
+          "contract",
+          "orderId"
+        ]
+      },
+      "ModifyOrderQueued": {
+        "type": "object",
+        "properties": {
+          "queued": {
+            "type": "boolean",
+            "description": "Always `true`."
+          },
+          "accepted": {
+            "type": "boolean",
+            "description": "Always `false`."
+          },
+          "body": {
+            "type": "string",
+            "description": "Always `order queued, pending acceptance`."
+          },
+          "action": {
+            "type": "string",
+            "description": "Always `modify`."
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Identifier assigned to the queued request."
+          },
+          "clientRequestId": {
+            "type": "string",
+            "description": "Client-generated UUID for correlation."
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name."
+          },
+          "orderId": {
+            "type": "string",
+            "description": "Unique identifier for the order."
+          }
+        },
+        "required": [
+          "queued",
+          "accepted",
+          "action",
+          "contract",
+          "orderId"
+        ]
+      },
+      "CancelOrderQueued": {
+        "type": "object",
+        "properties": {
+          "queued": {
+            "type": "boolean",
+            "description": "Always `true`."
+          },
+          "accepted": {
+            "type": "boolean",
+            "description": "Always `false`."
+          },
+          "body": {
+            "type": "string",
+            "description": "Always `order queued, pending acceptance`."
+          },
+          "action": {
+            "type": "string",
+            "description": "Always `cancel`."
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Identifier assigned to the queued request."
+          },
+          "clientRequestId": {
+            "type": "string",
+            "description": "Client-generated UUID for correlation."
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name."
+          },
+          "orderId": {
+            "type": "string",
+            "description": "Unique identifier for the order."
+          }
+        },
+        "required": [
+          "queued",
+          "accepted",
+          "action",
+          "contract",
+          "orderId"
+        ]
+      },
+      "CancelAllOrdersRequest": {
+        "type": "object",
+        "properties": {
+          "clientRequestId": {
+            "type": "string",
+            "format": "uuid",
+            "x-go-type": "string",
+            "description": "Client-generated UUID for correlation."
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name. Omit to cancel every open order."
+          }
+        }
+      },
+      "CancelAllOrdersQueued": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Always `cancelAll`."
+          },
+          "clientRequestId": {
+            "type": "string",
+            "format": "uuid",
+            "x-go-type": "string",
+            "description": "Client-generated UUID for correlation."
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name. Absent when every contract was swept."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of cancels queued."
+          },
+          "cancels": {
+            "type": "array",
+            "description": "One entry per queued cancel, newest first.",
+            "items": {
+              "$ref": "#/components/schemas/CancelOrderQueued"
+            }
+          },
+          "unqueued": {
+            "type": "array",
+            "description": "Open orders the sweep did not queue a cancel for. Present only when the queue refused part-way.",
+            "items": {
+              "$ref": "#/components/schemas/UnqueuedCancel"
+            }
+          }
+        },
+        "required": [
+          "action",
+          "clientRequestId",
+          "count",
+          "cancels"
+        ]
+      },
+      "UnqueuedCancel": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "Unique identifier for the order."
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name."
+          }
+        },
+        "required": [
+          "orderId",
+          "contract"
+        ]
+      },
+      "OrderStatus": {
+        "type": "object",
+        "properties": {
+          "clientRequestId": {
+            "type": "string",
+            "description": "Client-generated UUID for correlation."
+          },
+          "status": {
+            "type": "string",
+            "description": "Order status. See [Order Lifecycle](/latest/options/guides/order-lifecycle#order-statuses).",
+            "enum": [
+              "pending",
+              "accepted",
+              "open",
+              "completed",
+              "cancelled",
+              "rejected",
+              "not_found"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "description": "Status message."
+          },
+          "action": {
+            "type": "string",
+            "description": "The last action recorded for this order.",
+            "enum": [
+              "create",
+              "modify",
+              "cancel"
+            ]
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name."
+          },
+          "orderId": {
+            "type": "string",
+            "description": "Unique identifier for the order."
+          },
+          "quantity": {
+            "type": "string",
+            "description": "Order quantity."
+          },
+          "filledQuantity": {
+            "type": "string",
+            "description": "Quantity filled so far."
+          },
+          "remainingQuantity": {
+            "type": "string",
+            "description": "Quantity not yet filled."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the order was rejected."
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Order last update timestamp (milliseconds since epoch)."
+          }
+        },
+        "required": [
+          "status",
+          "updatedAt"
+        ]
+      },
+      "OpenOrders": {
+        "type": "object",
+        "properties": {
+          "nextPageToken": {
+            "type": "string",
+            "description": "Cursor for the next page. Present only when a further page exists."
+          },
+          "orders": {
+            "type": "array",
+            "description": "Resting orders; empty when you have none.",
+            "items": {
+              "$ref": "#/components/schemas/OpenOrder"
+            }
+          }
+        },
+        "required": [
+          "orders"
+        ]
+      },
+      "OpenOrder": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "Unique identifier for the order."
+          },
+          "contract": {
+            "type": "string",
+            "description": "Contract name."
+          },
+          "side": {
+            "type": "string",
+            "description": "Order side.",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "description": "Order type.",
+            "enum": [
+              "limit",
+              "market"
+            ]
+          },
+          "price": {
+            "type": "string",
+            "description": "Order price."
+          },
+          "quantity": {
+            "type": "string",
+            "description": "Order quantity."
+          },
+          "filledQuantity": {
+            "type": "string",
+            "description": "Quantity filled so far."
+          },
+          "avgFillPrice": {
+            "type": "string",
+            "description": "Volume-weighted average fill price; `0` while nothing has filled."
+          },
+          "leverage": {
+            "type": "string",
+            "description": "Leverage — always `0` for options."
+          },
+          "reduceOnly": {
+            "type": "boolean",
+            "description": "Reduce-only flag."
+          },
+          "postOnly": {
+            "type": "boolean",
+            "description": "Maker-only flag."
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Order creation timestamp (milliseconds since epoch)."
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Order last update timestamp (milliseconds since epoch)."
+          },
+          "status": {
+            "type": "string",
+            "description": "Always `open`."
+          }
+        },
+        "required": [
+          "orderId",
+          "contract",
+          "side",
+          "type",
+          "price",
+          "quantity",
+          "filledQuantity",
+          "avgFillPrice",
+          "leverage",
+          "reduceOnly",
+          "postOnly",
+          "createdAt",
+          "updatedAt",
+          "status"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "description": "An object containing error details.",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "description": "A short string identifier for the error type."
+              },
+              "code": {
+                "type": "string",
+                "description": "A string code representing the error."
+              }
+            },
+            "required": [
+              "slug",
+              "code"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "A human-readable message describing the error."
+          }
+        },
+        "required": [
+          "error",
+          "message"
+        ]
+      }
+    }
+  }
+}

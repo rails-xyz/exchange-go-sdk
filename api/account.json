@@ -1,0 +1,854 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "User Account API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://user-account.sandbox.rails.xyz"
+    }
+  ],
+  "paths": {
+    "/api/v1/balances": {
+      "get": {
+        "summary": "Retrieve account balances",
+        "operationId": "getAccountBalances",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/market"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/balancesResponse"
+                },
+                "example": {
+                  "balances": {
+                    "totalBalance": "99996952.15429778",
+                    "crossMarginBalance": "99234631.40719179",
+                    "availableBalance": "99521353.92161779",
+                    "withdrawableBalance": "92673870.38",
+                    "deposit": "100000000",
+                    "withdraw": "879.12",
+                    "withdrawFees": "8.88",
+                    "fees": "608.02030021",
+                    "pnl": "-1292.78457349",
+                    "funding": "-259.04082851",
+                    "volume": "608020.300274",
+                    "leverage": "5",
+                    "marketBalancesMap": {
+                      "BTC-USDT": {
+                        "position": "467782.520726",
+                        "positionQuantity": "7",
+                        "liquidationPrice": "126380.268279734335477455",
+                        "openBuy": "60000",
+                        "openBuyQty": "1",
+                        "openSell": "0",
+                        "openSellQty": "0",
+                        "pnl": "-1292.78457349",
+                        "positionPnl": "-1292.7845734999864",
+                        "funding": "113.21723468000002",
+                        "positionFunding": "113.21723468000002",
+                        "volume": "600695.07832",
+                        "fees": "600.69507826",
+                        "positionFees": "412.30512890",
+                        "liquidationFees": "0",
+                        "margin": "6498468.2474181248786156",
+                        "maintenanceMargin": "527842.520726",
+                        "markPrice": "66761.552",
+                        "unrealizedPnl": "-456.32",
+                        "leverage": "2",
+                        "marginMode": "C"
+                      },
+                      "ETH-USDT": {
+                        "position": "28894.648055999998",
+                        "positionQuantity": "8",
+                        "liquidationPrice": "28902.648056",
+                        "openBuy": "0",
+                        "openBuyQty": "0",
+                        "openSell": "8000",
+                        "openSellQty": "3",
+                        "pnl": "406.23975999",
+                        "positionPnl": "406.2397599999995",
+                        "funding": "-486.82005787000037",
+                        "positionFunding": "-486.82005787000037",
+                        "volume": "43545.091964",
+                        "fees": "43.54509196",
+                        "positionFees": "12.10884451",
+                        "liquidationFees": "0",
+                        "margin": "762320.7471059860003337",
+                        "maintenanceMargin": "28902.648056",
+                        "markPrice": "3635.098",
+                        "unrealizedPnl": "189.54",
+                        "leverage": "5",
+                        "marginMode": "I"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/api/v1/positions": {
+      "get": {
+        "summary": "Get Account Positions",
+        "operationId": "getAccountPositions",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/market"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/positionsResponse"
+                },
+                "example": {
+                  "positions": [
+                    {
+                      "market": "ETH-USDT",
+                      "value": "3772.272138",
+                      "quantity": "1.0",
+                      "funding": "92.49110924999998",
+                      "realizedPnl": "0.1",
+                      "unrealizedPnl": "-33.25166999999965",
+                      "liquidationPrice": "3500.652918",
+                      "type": "LONG",
+                      "notionalValue": "3739.020468",
+                      "marginMode": "C"
+                    },
+                    {
+                      "market": "BTC-USDT",
+                      "value": "-65000.272138",
+                      "quantity": "-1.0",
+                      "funding": "920.49110924999998",
+                      "realizedPnl": "1.5",
+                      "unrealizedPnl": "400.25166999999965",
+                      "liquidationPrice": "61033.135417",
+                      "type": "SHORT",
+                      "notionalValue": "-65400.523808",
+                      "marginMode": "I"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/api/v1/deposits": {
+      "get": {
+        "summary": "Get Account Deposits",
+        "operationId": "getAccountDeposits",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/start"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/depositsResponse"
+                },
+                "example": {
+                  "deposits": [
+                    {
+                      "dataType": "DEPOSIT",
+                      "market": "USDT",
+                      "value": "1000",
+                      "txCreated": 1717466763457,
+                      "refChainTxId": "0x19a89550272fc44a881d5e28a3619eace550b80191ef5a803163f90024d9f702"
+                    }
+                  ],
+                  "last": "USDT#DEPOSIT#0x19a89550272fc44a881d5e28a3619eace550b80191ef5a803163f90024d9f702#1717466763457"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/api/v1/withdrawals": {
+      "get": {
+        "summary": "Get Account Withdrawals",
+        "operationId": "getAccountWithdrawals",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/start"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/withdrawalsResponse"
+                },
+                "example": {
+                  "withdrawals": [
+                    {
+                      "dataType": "WITHDRAW",
+                      "market": "USDT",
+                      "value": "990.0",
+                      "fees": "10.0",
+                      "txCreated": 1717466763457,
+                      "txHash": "0x19a89550272fc44a881d5e28a3619eace550b80191ef5a803163f90024d9f702"
+                    }
+                  ],
+                  "last": "USDT#WITHDRAW#0x19a89550272fc44a881d5e28a3619eace550b80191ef5a803163f90024d9f702#1717466763457"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/api/v1/fundings": {
+      "get": {
+        "summary": "Get Account Fundings",
+        "operationId": "getAccountFundings",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/market"
+          },
+          {
+            "$ref": "#/components/parameters/start"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fundingsResponse"
+                },
+                "example": {
+                  "fundings": [
+                    {
+                      "dataType": "FUNDING",
+                      "market": "ETH-USDT",
+                      "value": "0.42747",
+                      "rate": "0.0001125",
+                      "indexPrice": "3799.73421126312",
+                      "positionSize": "-1",
+                      "txCreated": 1716921945759
+                    }
+                  ],
+                  "last": "ETH-USDT#FUNDING#01J4MD3R7N4HH4G76PT47VG3QC#1716921945759"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "RateLimited": {
+        "description": "",
+        "headers": {
+          "Retry-After": {
+            "description": "Number of seconds to wait before making another request (429 responses only)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "body": {
+                  "type": "string",
+                  "description": "A human-readable message describing the error."
+                },
+                "statusCode": {
+                  "type": "integer"
+                }
+              },
+              "required": ["body", "statusCode"]
+            },
+            "example": {
+              "body": "api call rate limit exceeded",
+              "statusCode": 429
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "description": "A human-readable message describing the error."
+                }
+              },
+              "required": ["message"]
+            },
+            "example": {
+              "message": "Unauthorized"
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "market": {
+        "name": "market",
+        "in": "query",
+        "description":"Market name. Example value: `ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint. Omit this parameter to get results across all markets.",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "start": {
+        "name": "start",
+        "in": "query",
+        "required": false,
+        "description": "This is a parameter to support pagination. Get the value from the `last` field if present in the previous response.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "fundingsResponse": {
+        "type": "object",
+        "properties": {
+          "fundings": {
+            "type": "array",
+            "description": "List of funding fee transactions for the account.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dataType": {
+                  "type": "string",
+                  "description": "Type of transaction. Always 'FUNDING' for funding fees."
+                },
+                "market": {
+                  "type": "string",
+                  "description": "Market name."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The value of the funding fee. Positive if received, negative if paid."
+                },
+                "rate": {
+                  "type": "string",
+                  "description": "The funding rate at which the fee was calculated, represented as a decimal rate. For example, `0.0001125` means `0.01125%`."
+                },
+                "indexPrice": {
+                  "type": "string",
+                  "description": "Index price at the time of funding fee calculation."
+                },
+                "positionSize": {
+                  "type": "string",
+                  "description": "Quantity of the position for which the funding fee was calculated. Positive for long, negative for short."
+                },
+                "txCreated": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Funding fee calculation timestamp (milliseconds since epoch)."
+                }
+              },
+              "required": [
+                "dataType",
+                "market",
+                "value",
+                "rate",
+                "indexPrice",
+                "positionSize",
+                "txCreated"
+              ]
+            }
+          },
+          "last": {
+            "$ref": "#/components/schemas/last"
+          }
+        },
+        "required": [
+          "fundings"
+        ]
+      },
+      "balancesResponse": {
+        "type": "object",
+        "properties": {
+          "balances": {
+            "type": "object",
+            "description": "Account balances and related financial information.",
+            "properties": {
+              "totalBalance": {
+                "type": "string",
+                "description": "Total balance for the account."
+              },
+              "crossMarginBalance": {
+                "type": "string",
+                "description": "Total balance available as collateral for cross margin positions."
+              },
+              "availableBalance": {
+                "type": "string",
+                "description": "Available balance for trading or withdrawal."
+              },
+              "withdrawableBalance": {
+                "type": "string",
+                "description": "Maximum balance available for withdrawal."
+              },
+              "deposit": {
+                "type": "string",
+                "description": "Total amount deposited."
+              },
+              "withdraw": {
+                "type": "string",
+                "description": "Total amount withdrawn."
+              },
+              "withdrawFees": {
+                "type": "string",
+                "description": "Total withdrawal fees charged."
+              },
+              "fees": {
+                "type": "string",
+                "description": "Total trading fees paid."
+              },
+              "pnl": {
+                "type": "string",
+                "description": "All-time realized PnL for the account."
+              },
+              "funding": {
+                "type": "string",
+                "description": "All-time funding fees for the account."
+              },
+              "volume": {
+                "type": "string",
+                "description": "Total trading volume for the account."
+              },
+              "leverage": {
+                "type": "string",
+                "description": "Current leverage setting for the account."
+              },
+              "liqFees": {
+                "type": "string",
+                "description": "Total liquidation fees paid. Omitted when zero."
+              },
+              "promoCredit": {
+                "type": "string",
+                "description": "Promotional credit available in the account. Omitted when zero."
+              },
+              "transferIn": {
+                "type": "string",
+                "description": "Total amount transferred into the account. Omitted when zero."
+              },
+              "transferOut": {
+                "type": "string",
+                "description": "Total amount transferred out of the account. Omitted when zero."
+              },
+              "marketBalancesMap": {
+                "type": "object",
+                "description": "A map of market names (e.g., `BTC-USDT` and `ETH-USDT`) to market balance details. The key is the market name, and the value is an object containing market-specific balance details.",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/marketBalance"
+                }
+              }
+            },
+            "required": [
+              "totalBalance",
+              "crossMarginBalance",
+              "availableBalance",
+              "withdrawableBalance",
+              "deposit",
+              "withdraw",
+              "withdrawFees",
+              "fees",
+              "pnl",
+              "funding",
+              "volume",
+              "leverage",
+              "marketBalancesMap"
+            ]
+          }
+        },
+        "required": [
+          "balances"
+        ]
+      },
+      "positionsResponse": {
+        "type": "object",
+        "properties": {
+          "positions": {
+            "type": "array",
+            "description": "List of positions for the account.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "market": {
+                  "type": "string",
+                  "description": "Market name. Example value: `ETH-USDT`. To get all supported markets, call [/api/v1/markets](/latest/perps/rest-api/get-supported-markets) endpoint."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Value of the position."
+                },
+                "quantity": {
+                  "type": "string",
+                  "description": "Quantity of the position."
+                },
+                "funding": {
+                  "type": "string",
+                  "description": "Funding fee for the position."
+                },
+                "realizedPnl": {
+                  "type": "string",
+                  "description": "Realized PnL for the position."
+                },
+                "unrealizedPnl": {
+                  "type": "string",
+                  "description": "Unrealized PnL for the position."
+                },
+                "liquidationPrice": {
+                  "type": "string",
+                  "description": "Liquidation price for the position."
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "LONG",
+                    "SHORT"
+                  ],
+                  "description": "Type of the position."
+                },
+                "notionalValue": {
+                  "type": "string",
+                  "description": "Notional value of the position."
+                },
+                "marginMode": {
+                  "type": "string",
+                  "enum": ["C", "I"],
+                  "description": "Margin mode for the position. `C` for cross margin, `I` for isolated margin."
+                }
+              },
+              "required": [
+                "market",
+                "value",
+                "quantity",
+                "funding",
+                "realizedPnl",
+                "unrealizedPnl",
+                "liquidationPrice",
+                "type",
+                "notionalValue",
+                "marginMode"
+              ]
+            }
+          }
+        },
+        "required": [
+          "positions"
+        ]
+      },
+      "depositsResponse": {
+        "type": "object",
+        "properties": {
+          "deposits": {
+            "type": "array",
+            "description": "List of deposit transactions for the account.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dataType": {
+                  "type": "string",
+                  "description": "Type of transaction. Always 'DEPOSIT' for deposits."
+                },
+                "market": {
+                  "type": "string",
+                  "description": "Asset deposited (e.g., 'USDT'). Note: This field is named 'market', but it's an asset symbol, not a trading market."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Amount deposited."
+                },
+                "txCreated": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Deposit timestamp (milliseconds since epoch)."
+                },
+                "refChainTxId": {
+                  "type": "string",
+                  "description": "Blockchain transaction hash for the deposit."
+                }
+              },
+              "required": [
+                "dataType",
+                "market",
+                "value",
+                "txCreated",
+                "refChainTxId"
+              ]
+            }
+          },
+          "last": {
+            "$ref": "#/components/schemas/last"
+          }
+        },
+        "required": [
+          "deposits"
+        ]
+      },
+      "withdrawalsResponse": {
+        "type": "object",
+        "properties": {
+          "withdrawals": {
+            "type": "array",
+            "description": "List of withdrawal transactions for the account.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dataType": {
+                  "type": "string",
+                  "description": "Type of transaction. Always 'WITHDRAW' for withdrawals."
+                },
+                "market": {
+                  "type": "string",
+                  "description": "Asset withdrawn (e.g., 'USDT'). Note: This field is named 'market', but it's an asset symbol, not a trading market."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Amount withdrawn."
+                },
+                "fees": {
+                  "type": "string",
+                  "description": "Withdrawal fee charged."
+                },
+                "txCreated": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Withdrawal timestamp (milliseconds since epoch)."
+                },
+                "txHash": {
+                  "type": "string",
+                  "description": "Blockchain transaction hash for the withdrawal."
+                }
+              },
+              "required": [
+                "dataType",
+                "market",
+                "value",
+                "fees",
+                "txCreated",
+                "txHash"
+              ]
+            }
+          },
+          "last": {
+            "$ref": "#/components/schemas/last"
+          }
+        },
+        "required": [
+          "withdrawals"
+        ]
+      },
+      "last": {
+        "type": "string",
+        "description": "This is a field in the response to support pagination. Use this value if present for the `start` parameter of the following request to get the next page of results."
+      },
+      "marketBalance":{
+        "type": "object",
+        "description": "Market-specific balance details for an account.",
+        "properties": {
+          "position": {
+            "type": "string",
+            "description": "Value of the current position."
+          },
+          "positionQuantity": {
+            "type": "string",
+            "description": "Quantity of the current position."
+          },
+          "liquidationPrice": {
+            "type": "string",
+            "description": "Liquidation price for the current position."
+          },
+          "openBuy": {
+            "type": "string",
+            "description": "Total open buy order value."
+          },
+          "openBuyQty": {
+            "type": "string",
+            "description": "Total open buy order quantity."
+          },
+          "openSell": {
+            "type": "string",
+            "description": "Total open sell order value."
+          },
+          "openSellQty": {
+            "type": "string",
+            "description": "Total open sell order quantity."
+          },
+          "pnl": {
+            "type": "string",
+            "description": "All-time realized PnL for the market."
+          },
+          "positionPnl": {
+            "type": "string",
+            "description": "Realized PnL for the current position."
+          },
+          "funding": {
+            "type": "string",
+            "description": "All-time funding fee for the market. It can be positive or negative, depending on whether you are receiving or paying the funding fee."
+          },
+          "positionFunding": {
+            "type": "string",
+            "description": "Funding fee for the current position. It can be positive or negative, depending on whether you are receiving or paying the funding fee."
+          },
+          "volume": {
+            "type": "string",
+            "description": "Total trading volume for the market."
+          },
+          "fees": {
+            "type": "string",
+            "description": "Total trading fees paid for the market."
+          },
+          "positionFees": {
+            "type": "string",
+            "description": "Trading fees paid for the current position."
+          },
+          "liquidationFees": {
+            "type": "string",
+            "description": "Total liquidation fees paid for the market."
+          },
+          "margin": {
+            "type": "string",
+            "description": "Current margin used for the market."
+          },
+          "maintenanceMargin": {
+            "type": "string",
+            "description": "Current maintenance margin for the market."
+          },
+          "markPrice": {
+            "type": "string",
+            "description": "Current mark price for the market — the value used to compute `margin`, `maintenanceMargin`, `unrealizedPnl`, and `liquidationPrice`. See [Mark Price](/latest/perps/formulas/mark-price)."
+          },
+          "unrealizedPnl": {
+            "type": "string",
+            "description": "Unrealized PnL for the current position."
+          },
+          "leverage": {
+            "type": "string",
+            "description": "Current leverage setting for the market."
+          },
+          "marginMode": {
+            "type": "string",
+            "enum": ["C", "I"],
+            "description": "Margin mode for this market. `C` for cross margin, `I` for isolated margin."
+          }
+        },
+        "required": [
+          "position",
+          "positionQuantity",
+          "liquidationPrice",
+          "openBuy",
+          "openBuyQty",
+          "openSell",
+          "openSellQty",
+          "pnl",
+          "positionPnl",
+          "funding",
+          "positionFunding",
+          "volume",
+          "fees",
+          "positionFees",
+          "liquidationFees",
+          "margin",
+          "maintenanceMargin",
+          "markPrice",
+          "unrealizedPnl",
+          "leverage",
+          "marginMode"
+        ]
+      }
+    }
+  }
+}

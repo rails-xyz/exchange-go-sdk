@@ -1,0 +1,4 @@
+package: order
+output: internal/wire/order/models.gen.go
+generate:
+  models: true
