@@ -366,6 +366,7 @@ type wireContractState struct {
 	Rho          string `json:"rho"`
 	OpenInterest string `json:"openInterest"`
 	Volume24h    string `json:"volume24h"`
+	LotSize      string `json:"lotSize"`
 }
 
 func (w wireContractState) toContractState() ContractState {
@@ -391,6 +392,7 @@ func (w wireContractState) toContractState() ContractState {
 		Rho:          w.Rho,
 		OpenInterest: w.OpenInterest,
 		Volume24h:    w.Volume24h,
+		LotSize:      w.LotSize,
 	}
 }
 
@@ -426,6 +428,7 @@ type wireContractUpdate struct {
 	Vega         string `json:"vega"`
 	Theta        string `json:"theta"`
 	Rho          string `json:"rho"`
+	LotSize      string `json:"lotSize"`
 }
 
 func (w wireContractUpdate) toContractUpdate() ContractUpdate {
@@ -443,6 +446,7 @@ func (w wireContractUpdate) toContractUpdate() ContractUpdate {
 		Vega:         w.Vega,
 		Theta:        w.Theta,
 		Rho:          w.Rho,
+		LotSize:      w.LotSize,
 	}
 }
 

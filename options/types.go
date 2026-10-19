@@ -354,6 +354,7 @@ type ContractState struct {
 	Rho          string
 	OpenInterest string
 	Volume24h    string
+	LotSize      string // order quantities must be positive multiples of it
 }
 
 // ExpectedMove is the move of the index an expiry's options imply by that expiry.

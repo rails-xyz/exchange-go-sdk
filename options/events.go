@@ -70,8 +70,8 @@ type Liquidation struct {
 	TriggeredAt   int64
 }
 
-// ContractUpdate is a change to a contract's mark price, IV or greeks, from the contracts
-// stream.
+// ContractUpdate is a change to a contract's mark price, IV, greeks or lot size, from the
+// contracts stream.
 type ContractUpdate struct {
 	ContractName string
 	Underlying   string // such as BTC-USDT
@@ -86,6 +86,7 @@ type ContractUpdate struct {
 	Vega         string
 	Theta        string
 	Rho          string
+	LotSize      string // order quantities must be positive multiples of it
 }
 
 // QuoteUpdate is a change to the top of a contract's book, from the quotes stream.
