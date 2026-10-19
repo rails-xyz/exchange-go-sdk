@@ -128,8 +128,11 @@ type Contract struct {
 	ExpiryType *string `json:"expiryType,omitempty"`
 	Forward    *string `json:"forward,omitempty"`
 	Gamma      *string `json:"gamma,omitempty"`
-	MarkIV     *string `json:"markIV,omitempty"`
-	MarkPrice  *string `json:"markPrice,omitempty"`
+
+	// LotSize Quantity step: an order quantity must be a positive multiple of this. `1` for contracts that trade only in whole units.
+	LotSize   *string `json:"lotSize,omitempty"`
+	MarkIV    *string `json:"markIV,omitempty"`
+	MarkPrice *string `json:"markPrice,omitempty"`
 
 	// OptionType `C` (call) or `P` (put).
 	OptionType *string `json:"optionType,omitempty"`

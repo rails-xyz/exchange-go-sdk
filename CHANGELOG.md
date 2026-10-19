@@ -3,6 +3,13 @@
 Notable changes to this module. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and versions follow [semantic versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `options.Contract.LotSize`, the quantity step of a contract. An order quantity must be a
+  positive multiple of it; `"1"` means whole contracts only.
+
 ## [1.0.0]
 
 The first release.
