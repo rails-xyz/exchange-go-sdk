@@ -9,6 +9,8 @@ and versions follow [semantic versioning](https://semver.org/).
 
 - `options.Contract.LotSize`, the quantity step of a contract. An order quantity must be a
   positive multiple of it; `"1"` means whole contracts only.
+- `options.ContractState.LotSize` and `options.ContractUpdate.LotSize` on the contracts
+  stream. Updates carry it, so a lot size change reaches you without a new snapshot.
 
 ## [1.0.0]
 
