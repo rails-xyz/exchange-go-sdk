@@ -223,7 +223,7 @@ type CreateOrderPayload struct {
 	// Price Limit price; for market orders, expected price.
 	Price string `json:"price"`
 
-	// Quantity Order quantity.
+	// Quantity Order quantity. Must be a positive multiple of the contract's `lotSize` (contracts API).
 	Quantity string `json:"quantity"`
 
 	// ReduceOnly Reduce-only flag. When `true`, the order can only reduce an existing position.
@@ -299,7 +299,7 @@ type ModifyOrderPayload struct {
 	// Price New order price.
 	Price string `json:"price"`
 
-	// Quantity New order quantity.
+	// Quantity New order quantity. Must be a positive multiple of the contract's `lotSize` (contracts API).
 	Quantity string `json:"quantity"`
 }
 

@@ -183,7 +183,7 @@ func TestEveryOperationAgainstItsSpecExample(t *testing.T) {
 				ContractName: "BTC-3JUL26-60000-C", Underlying: "BTC-USDT", Strike: "60000",
 				OptionType: options.OptionTypeCall, ExpiryDate: "2026-07-03", ExpiryType: options.ExpiryTypeWeekly,
 				MarkPrice: "1677.30", BidPrice: "0", AskPrice: "0", MarkIV: "0.3925", BidIV: "0", AskIV: "0",
-				Forward: "61665.1057145", TickSize: "0.01", ContractSize: "1", SettlementType: "CASH",
+				Forward: "61665.1057145", TickSize: "0.01", ContractSize: "1", LotSize: "0.001", SettlementType: "CASH",
 				Delta: "0.9666", Gamma: "0.00008040", Vega: "1.7499", Theta: "-64.49", Rho: "-0.024469",
 			},
 			wantItems: 4,

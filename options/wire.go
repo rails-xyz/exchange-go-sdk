@@ -59,6 +59,7 @@ func contractsResponseToContracts(w optionsaccount.Contracts) []Contract {
 			Forward:        deref(c.Forward),
 			TickSize:       deref(c.TickSize),
 			ContractSize:   deref(c.ContractSize),
+			LotSize:        deref(c.LotSize),
 			SettlementType: deref(c.SettlementType),
 			Delta:          deref(c.Delta),
 			Gamma:          deref(c.Gamma),

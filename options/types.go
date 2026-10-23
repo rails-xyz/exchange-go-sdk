@@ -129,6 +129,7 @@ type Contract struct {
 	Forward        string
 	TickSize       string
 	ContractSize   string
+	LotSize        string
 	SettlementType string
 	Delta          string
 	Gamma          string
@@ -351,6 +352,7 @@ type ContractState struct {
 	Rho          string
 	OpenInterest string
 	Volume24h    string
+	LotSize      string
 }
 
 // ExpectedMove is the move of the index an expiry's options imply by that expiry.
