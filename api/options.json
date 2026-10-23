@@ -668,7 +668,7 @@
           "forward": { "type": "string" },
           "tickSize": { "type": "string" },
           "contractSize": { "type": "string" },
-          "lotSize": { "type": "string", "description": "Quantity step: an order quantity must be a positive multiple of this. `1` for contracts that trade only in whole units." },
+          "lotSize": { "type": "string", "description": "Minimum quantity movement, such as `0.001`." },
           "settlementType": { "type": "string", "description": "Settlement type, e.g. `CASH`." },
           "delta": { "type": "string" },
           "gamma": { "type": "string" },

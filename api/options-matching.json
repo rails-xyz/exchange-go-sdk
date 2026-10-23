@@ -753,7 +753,7 @@
           },
           "quantity": {
             "type": "string",
-            "description": "Order quantity."
+            "description": "Order quantity. Must be a positive multiple of the contract's `lotSize` (contracts API)."
           },
           "postOnly": {
             "type": "boolean",
@@ -810,7 +810,7 @@
           },
           "quantity": {
             "type": "string",
-            "description": "New order quantity."
+            "description": "New order quantity. Must be a positive multiple of the contract's `lotSize` (contracts API)."
           }
         },
         "required": [

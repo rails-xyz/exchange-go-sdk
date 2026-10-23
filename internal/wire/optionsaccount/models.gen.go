@@ -129,7 +129,7 @@ type Contract struct {
 	Forward    *string `json:"forward,omitempty"`
 	Gamma      *string `json:"gamma,omitempty"`
 
-	// LotSize Quantity step: an order quantity must be a positive multiple of this. `1` for contracts that trade only in whole units.
+	// LotSize Minimum quantity movement, such as `0.001`.
 	LotSize   *string `json:"lotSize,omitempty"`
 	MarkIV    *string `json:"markIV,omitempty"`
 	MarkPrice *string `json:"markPrice,omitempty"`

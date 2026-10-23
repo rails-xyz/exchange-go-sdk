@@ -859,6 +859,9 @@ components:
         volume24h:
           type: string
           description: 24h traded volume
+        lotSize:
+          type: string
+          description: Minimum quantity movement, such as `0.001`
       required:
         - contractName
         - underlying
@@ -881,6 +884,7 @@ components:
         - rho
         - openInterest
         - volume24h
+        - lotSize
 
     ExpiryExpectedMove:
       type: object
@@ -1690,7 +1694,7 @@ components:
                 description: Limit price; for market orders, the expected price
               quantity:
                 type: string
-                description: Order quantity
+                description: Order quantity. Must be a positive multiple of the contract's `lotSize`
               orderType:
                 type: string
                 enum: [buy, sell]
@@ -1927,7 +1931,7 @@ components:
                 description: New order price
               quantity:
                 type: string
-                description: New order quantity
+                description: New order quantity. Must be a positive multiple of the contract's `lotSize`
             required: [orderId, price, quantity]
         required: [message, content]
       examples:
@@ -2668,6 +2672,7 @@ components:
                   rho: "-13.346896"
                   openInterest: "0"
                   volume24h: "0"
+                  lotSize: "0.001"
                 - contractName: BTC-10JUL26-63000-P
                   underlying: BTC-USDT
                   strike: "63000"
@@ -2689,6 +2694,7 @@ components:
                   rho: "-7.000304"
                   openInterest: "2"
                   volume24h: "0"
+                  lotSize: "0.001"
               expiries:
                 - expiryDate: "2026-07-10"
                   underlying: "BTC-USDT"
@@ -2753,6 +2759,9 @@ components:
               rho:
                 type: string
                 description: Sensitivity of the option's price to a 1% change in interest rates
+              lotSize:
+                type: string
+                description: Minimum quantity movement, such as `0.001`
             required:
               - contractName
               - underlying
@@ -2767,6 +2776,7 @@ components:
               - vega
               - theta
               - rho
+              - lotSize
         required: [resultType, market, data]
       examples:
         - payload:
@@ -2786,6 +2796,7 @@ components:
               vega: "185.7490523"
               theta: "-16.6912762"
               rho: "-88.2604965"
+              lotSize: "0.001"
 
     EmitOptionsQuotesRequest:
       name: emitOptionsQuotes
