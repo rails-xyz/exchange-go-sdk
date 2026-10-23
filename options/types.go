@@ -114,23 +114,21 @@ type Expiration struct {
 type Contract struct {
 	_ struct{}
 
-	ContractName string
-	Underlying   string
-	Strike       string
-	OptionType   OptionType
-	ExpiryDate   string // YYYY-MM-DD
-	ExpiryType   ExpiryType
-	MarkPrice    string
-	BidPrice     string
-	AskPrice     string
-	MarkIV       string
-	BidIV        string
-	AskIV        string
-	Forward      string
-	TickSize     string
-	ContractSize string
-	// LotSize is the quantity step: an order quantity must be a positive multiple of it. "1" means
-	// whole contracts only.
+	ContractName   string
+	Underlying     string
+	Strike         string
+	OptionType     OptionType
+	ExpiryDate     string // YYYY-MM-DD
+	ExpiryType     ExpiryType
+	MarkPrice      string
+	BidPrice       string
+	AskPrice       string
+	MarkIV         string
+	BidIV          string
+	AskIV          string
+	Forward        string
+	TickSize       string
+	ContractSize   string
 	LotSize        string
 	SettlementType string
 	Delta          string
@@ -354,7 +352,7 @@ type ContractState struct {
 	Rho          string
 	OpenInterest string
 	Volume24h    string
-	LotSize      string // order quantities must be positive multiples of it
+	LotSize      string
 }
 
 // ExpectedMove is the move of the index an expiry's options imply by that expiry.

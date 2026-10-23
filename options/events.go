@@ -86,7 +86,7 @@ type ContractUpdate struct {
 	Vega         string
 	Theta        string
 	Rho          string
-	LotSize      string // order quantities must be positive multiples of it
+	LotSize      string
 }
 
 // QuoteUpdate is a change to the top of a contract's book, from the quotes stream.
