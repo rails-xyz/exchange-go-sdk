@@ -3,6 +3,14 @@
 Notable changes to this module. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and versions follow [semantic versioning](https://semver.org/).
 
+## [1.2.0]
+
+### Added
+
+- `perps.CodeCreateOrderMarketHalted`, `perps.CodeCancelOrderMarketHalted`,
+  `perps.CodeModifyOrderMarketHalted` and `perps.CodeUpdateMarginMarketHalted`, returned when
+  a market's trading state refuses a create, cancel, modify or margin update.
+
 ## [1.1.0]
 
 ### Added
