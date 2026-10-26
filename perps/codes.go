@@ -29,6 +29,9 @@ const (
 	// CodeCreateOrderConflict is an order whose state moved on while the command was in
 	// flight. Look the order up before deciding what to do.
 	CodeCreateOrderConflict rails.Code = "PRP-0109"
+	// CodeCreateOrderMarketHalted is the market's trading state not accepting the order, for
+	// example while the market is reduce-only or disabled.
+	CodeCreateOrderMarketHalted rails.Code = "PRP-0110"
 
 	// CodeCancelOrderError is a cancel failure none of the other 02xx codes names.
 	CodeCancelOrderError rails.Code = "PRP-0200"
@@ -41,6 +44,8 @@ const (
 	// CodeCancelOrderNotCancellable is an order already filled, cancelled or rejected, or a
 	// liquidation order.
 	CodeCancelOrderNotCancellable rails.Code = "PRP-0203"
+	// CodeCancelOrderMarketHalted is a cancel in a disabled market.
+	CodeCancelOrderMarketHalted rails.Code = "PRP-0204"
 
 	// CodeModifyOrderError is a modify failure none of the other 03xx codes names.
 	CodeModifyOrderError rails.Code = "PRP-0300"
@@ -73,6 +78,9 @@ const (
 	CodeModifyOrderSelfTrade rails.Code = "PRP-0313"
 	// CodeModifyOrderPriceBand is a modified price too far from the mark or index price.
 	CodeModifyOrderPriceBand rails.Code = "PRP-0314"
+	// CodeModifyOrderMarketHalted is the market's trading state not accepting modifies from
+	// this account.
+	CodeModifyOrderMarketHalted rails.Code = "PRP-0315"
 
 	// CodeOrderRejected is a pushed rejection none of the other 06xx codes names.
 	CodeOrderRejected rails.Code = "PRP-0600"
@@ -99,6 +107,8 @@ const (
 	// CodeUpdateMarginConflict is the position's margin updated by another request meanwhile.
 	// Send it again.
 	CodeUpdateMarginConflict rails.Code = "PRP-0805"
+	// CodeUpdateMarginMarketHalted is a margin update in a disabled market.
+	CodeUpdateMarginMarketHalted rails.Code = "PRP-0806"
 
 	// CodeUpdateMarginModeMarketInUse is open positions or orders forbidding the change.
 	CodeUpdateMarginModeMarketInUse rails.Code = "PRP-0901"
