@@ -39,4 +39,7 @@ const (
 	CodeConnectionLimit Code = "SYS-0013"
 	// CodeTradingDisabled is an account that may not trade: disabled, or its wallet unverified.
 	CodeTradingDisabled Code = "SYS-0014"
+	// CodeMarketDisabled is a Perpetuals market that is disabled or does not exist, returned to a
+	// WebSocket connection, subscription or command that names it.
+	CodeMarketDisabled Code = "SYS-0015"
 )

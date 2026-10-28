@@ -3,6 +3,13 @@
 Notable changes to this module. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and versions follow [semantic versioning](https://semver.org/).
 
+## [1.3.0]
+
+### Added
+
+- `rails.CodeMarketDisabled`, returned when a WebSocket connection, subscription or command
+  names a Perpetuals market that is disabled or does not exist.
+
 ## [1.2.0]
 
 ### Added
