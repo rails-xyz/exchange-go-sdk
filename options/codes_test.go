@@ -28,6 +28,7 @@ var knownCodes = map[rails.Code]struct{}{
 	rails.CodeSubscriptionLimit:  {},
 	rails.CodeConnectionLimit:    {},
 	rails.CodeTradingDisabled:    {},
+	rails.CodeMarketDisabled:     {},
 
 	options.CodeContractNotReady:               {},
 	options.CodeInactiveContract:               {},
