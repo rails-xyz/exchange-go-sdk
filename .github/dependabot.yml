@@ -9,15 +9,3 @@ updates:
       actions:
         patterns: ["*"]
     labels: ["dependencies"]
-  - package-ecosystem: gomod
-    directories: ["/**/*"]
-    schedule:
-      interval: weekly
-      day: monday
-    cooldown:
-      default-days: 7
-    open-pull-requests-limit: 5
-    groups:
-      gomod-minor-patch:
-        update-types: ["minor", "patch"]
-    labels: ["dependencies"]
