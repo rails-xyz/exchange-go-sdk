@@ -68,7 +68,8 @@ type Hooks struct {
 	RequestAcked func(ReqInfo, time.Duration)
 	// RequestDone reports send → terminal frame, or the failure that replaced it.
 	RequestDone func(ReqInfo, time.Duration, error)
-	// HTTPDone reports every HTTP attempt, retries included, with its status or its error.
+	// HTTPDone reports every HTTP attempt of an API call, retries included, with its status or
+	// its error. The token mint is not reported.
 	HTTPDone func(HTTPInfo, time.Duration, error)
 	// Paced reports a call the pacer delayed or refused. Only fires with [WithPacer].
 	Paced func(PaceInfo)

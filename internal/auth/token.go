@@ -52,7 +52,7 @@ type Source struct {
 	expires  time.Time
 	refresh  time.Time
 	retryAt  time.Time // a failed mint is not repeated before this
-	failure  error     // what the last mint failed with, while there is no token to fall back on
+	failure  error     // what the last mint failed with, served once the token in hand expires
 	inflight *flight
 }
 
@@ -144,7 +144,7 @@ func (s *Source) refreshOnce(ctx context.Context, f *flight) {
 	case s.token != "" && now.Before(s.expires):
 		// The refresh failed, but what we hold is still good. Sit on it for a while rather
 		// than minting again on the very next call.
-		s.retryAt = now.Add(retryDelay(err))
+		s.retryAt, s.failure = now.Add(retryDelay(err)), err
 		f.token = s.token
 	default:
 		s.retryAt, s.failure = now.Add(retryDelay(err)), err

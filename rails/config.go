@@ -32,7 +32,7 @@ func NewConfig(opts ...Option) *Config {
 		Environment: Production(),
 		// Not http.DefaultClient: an application that sets a Timeout on that shared instance
 		// would break every WebSocket dial in the SDK.
-		HTTPClient: &http.Client{},
+		HTTPClient: &http.Client{CheckRedirect: sameOriginRedirects},
 		Logger:     slog.New(slog.DiscardHandler),
 		Telemetry:  true,
 	}
@@ -43,6 +43,15 @@ func NewConfig(opts ...Option) *Config {
 		cfg.Telemetry = false
 	}
 	return cfg
+}
+
+// sameOriginRedirects follows a redirect only within the origin it started at: anywhere else,
+// the credential headers would go with it.
+func sameOriginRedirects(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 || req.URL.Scheme != via[0].URL.Scheme || req.URL.Host != via[0].URL.Host {
+		return http.ErrUseLastResponse
+	}
+	return nil
 }
 
 // WithEnvironment selects the hosts to talk to. Defaults to [Production].

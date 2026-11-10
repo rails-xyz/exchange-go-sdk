@@ -3,6 +3,7 @@ package rails
 import (
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,6 +22,31 @@ func TestNewConfigDefaults(t *testing.T) {
 	assert.Zero(t, cfg.Hooks, "no hooks unless asked for")
 	assert.Nil(t, cfg.TokenSource, "a nil token source is the signal for the product client to install its own")
 	assert.True(t, cfg.Telemetry)
+}
+
+func TestDefaultClientFollowsRedirectsOnlyWithinTheOrigin(t *testing.T) {
+	elsewhere := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	t.Cleanup(elsewhere.Close)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/moved", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/token", http.StatusTemporaryRedirect)
+	})
+	mux.HandleFunc("/away", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, elsewhere.URL+"/token", http.StatusTemporaryRedirect)
+	})
+	mux.HandleFunc("/token", func(http.ResponseWriter, *http.Request) {})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	for path, want := range map[string]int{
+		"/moved": http.StatusOK,
+		"/away":  http.StatusTemporaryRedirect,
+	} {
+		resp, err := NewConfig().HTTPClient.Get(srv.URL + path)
+		require.NoError(t, err)
+		_ = resp.Body.Close()
+		assert.Equal(t, want, resp.StatusCode, path)
+	}
 }
 
 // Whoever runs the process outranks whoever compiled it.
