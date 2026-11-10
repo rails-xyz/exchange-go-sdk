@@ -31,6 +31,9 @@ type owner struct {
 	pending  map[string]*pending
 	watchers map[*Watch]struct{}
 
+	handingOver bool      // from the live socket's shutdown notice until its replacement is up
+	held        []request // commands that reconfigure, held for the replacement
+
 	frames chan inbound
 	dials  chan dialResult
 
@@ -114,6 +117,9 @@ func (c *Conn) run(sock socket) {
 		case <-o.retireTimer.C:
 			o.dropRetiring()
 		}
+		if !o.handingOver && len(o.held) > 0 {
+			o.releaseHeld()
+		}
 	}
 }
 
@@ -138,6 +144,9 @@ func (o *owner) onInbound(in inbound) {
 	if bare := in.frame.BareError(); bare != nil && bare.StatusCode == http.StatusTooManyRequests {
 		o.failDropped(bare)
 	}
+	if o.handingOver {
+		o.handOver()
+	}
 	// A request's own answer may be what another caller is watching for.
 	if terminal(route.StatusCode) && o.notifyWatchers(in.frame, route) {
 		consumed = true
@@ -152,6 +161,7 @@ func (o *owner) onInbound(in inbound) {
 		// Open the replacement before closing this one: the old socket keeps delivering until
 		// the deadline, so a handover loses nothing.
 		o.opts.Logger.Info("server is draining, handing over", "connId", o.opts.ConnID)
+		o.handingOver = true
 		o.handOver()
 	}
 }
@@ -166,7 +176,7 @@ const (
 // consumed it. A frame the request did not ask for still ends it, and is still an event,
 // unless the request is [Send.AckIsAnswer].
 func (o *owner) answer(id string, p *pending, frame Frame, route routing) bool {
-	if p.resumed {
+	if p.resumed || p.abandoned {
 		delete(o.pending, id)
 		return false
 	}
@@ -229,7 +239,7 @@ func (o *owner) failDropped(bare *rails.Error) {
 	if dropped == nil {
 		return
 	}
-	if dropped.resumed {
+	if dropped.resumed || dropped.abandoned {
 		delete(o.pending, id) // its answer is not coming, so it no longer hides a command's
 		return
 	}
@@ -281,17 +291,22 @@ func (o *owner) onRequest(req request) {
 		return
 	}
 	if req.forget != "" {
+		o.held = slices.DeleteFunc(o.held, func(h request) bool { return h.reply == req.reply })
 		p, ok := o.pending[req.forget]
 		if !ok || p.reply != req.reply {
 			return // already answered, or a later request under the same id
 		}
-		delete(o.pending, req.forget)
+		p.reply, p.abandoned = nil, true
 		o.hooks().RequestDone(o.reqInfo(p, req.forget), time.Since(p.sentAt),
 			timeoutError(p.op, req.forget, "the caller stopped waiting"))
 		return
 	}
 
 	s := req.send
+	if s.Reconfigures && o.handingOver {
+		o.held = append(o.held, req)
+		return
+	}
 	if o.sock == nil {
 		req.reply <- result{err: notSentError(s.Message, s.ClientRequestID)}
 		return
@@ -323,13 +338,23 @@ func (o *owner) onRequest(req request) {
 		return
 	}
 	o.pending[s.ClientRequestID] = &pending{
-		op:          s.Message,
-		replyTypes:  s.replyTypes(),
-		ackIsAnswer: s.AckIsAnswer,
-		market:      s.Market,
-		sentAt:      time.Now(),
-		reply:       req.reply,
-		gen:         o.gen,
+		op:           s.Message,
+		replyTypes:   s.replyTypes(),
+		ackIsAnswer:  s.AckIsAnswer,
+		market:       s.Market,
+		sentAt:       time.Now(),
+		reply:        req.reply,
+		gen:          o.gen,
+		reconfigures: s.Reconfigures,
+	}
+}
+
+// releaseHeld sends what waited out a handover, on its replacement, or fails it if none came up.
+func (o *owner) releaseHeld() {
+	held := o.held
+	o.held = nil
+	for _, req := range held {
+		o.onRequest(req)
 	}
 }
 
@@ -375,6 +400,12 @@ func (o *owner) write(message string, content any) error {
 func (o *owner) handOver() {
 	if o.dialing || o.scheduled {
 		return
+	}
+	// The replacement asks for what is confirmed when it dials.
+	for _, p := range o.pending {
+		if p.reconfigures {
+			return
+		}
 	}
 	if until := time.Until(o.notReady); until > 0 {
 		o.startDial(0)
@@ -441,6 +472,7 @@ func (o *owner) onDialResult(res dialResult) {
 	old := o.sock
 	o.sock = res.sock
 	o.gen++
+	o.handingOver = false
 	o.notReady = time.Time{}
 	if o.pingWaiting != "" {
 		// Its pong, if one still comes on the old socket, is not worth a map entry for ever.
@@ -506,6 +538,7 @@ func (o *owner) dropRetiring() {
 // disconnect drops the current socket and fails every request still waiting on it, so no
 // caller is left hanging on a connection that no longer exists.
 func (o *owner) disconnect(reason rails.DisconnectReason) {
+	o.handingOver = false
 	if o.sock != nil {
 		_ = o.sock.CloseNow()
 		o.sock = nil
@@ -549,6 +582,10 @@ func (o *owner) shutdown() {
 		_ = o.sock.Close(websocket.StatusNormalClosure, "client closing")
 		o.sock = nil
 	}
+	for _, req := range o.held {
+		req.reply <- result{err: notSentError(req.send.Message, req.send.ClientRequestID)}
+	}
+	o.held = nil
 	o.failPending()
 }
 

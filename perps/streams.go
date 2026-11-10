@@ -46,8 +46,9 @@ func (c *Conn) subscription(ctx context.Context, op, resultType string, subscrip
 		Message:         op,
 		ClientRequestID: id,
 		// An error is answered under the command's own name.
-		ReplyTypes: []string{resultType, op},
-		Content:    subscriptionContent{ClientRequestID: id, Subscriptions: subscriptions},
+		ReplyTypes:   []string{resultType, op},
+		Content:      subscriptionContent{ClientRequestID: id, Subscriptions: subscriptions},
+		Reconfigures: true,
 	})
 	if err != nil {
 		return nil, err

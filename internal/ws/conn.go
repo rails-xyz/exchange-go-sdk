@@ -82,6 +82,10 @@ type Send struct {
 
 	// Market is the market the command names, for [rails.Hooks] only.
 	Market string
+
+	// Reconfigures marks a command that changes what a new socket asks for: it waits out a
+	// handover, and the replacement is dialled only once it is answered.
+	Reconfigures bool
 }
 
 type request struct {
@@ -168,16 +172,18 @@ func (w *Watch) Stop() {
 
 // pending is a request the exchange has not finished answering.
 type pending struct {
-	op          string
-	replyTypes  []string
-	ackIsAnswer bool
-	market      string
-	sentAt      time.Time
-	ackAt       time.Time
-	quota       int64
-	reply       chan result // nil for the connection's own keepalive ping, and for a resume
-	resumed     bool        // written by Resume; its answer goes to OnFrame
-	gen         int         // the socket it was written on
+	op           string
+	replyTypes   []string
+	ackIsAnswer  bool
+	market       string
+	sentAt       time.Time
+	ackAt        time.Time
+	quota        int64
+	reply        chan result // nil for the connection's own keepalive ping, a resume, and an abandoned command
+	resumed      bool        // written by Resume; its answer goes to OnFrame
+	abandoned    bool        // its caller stopped waiting; kept so a bare 429 is not pinned on another command
+	reconfigures bool
+	gen          int // the socket it was written on
 }
 
 func (s Send) replyTypes() []string {

@@ -2,6 +2,7 @@ package ws
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"sync/atomic"
@@ -529,6 +530,45 @@ func TestBareRateLimitWithAnotherWriteUnansweredIsNotPinned(t *testing.T) {
 	}
 }
 
+// A command whose caller stopped waiting may still be the one a bare rate limit dropped.
+func TestBareRateLimitIsNotPinnedOnACommandSentAfterOneAbandoned(t *testing.T) {
+	srv := perpstest.New(t)
+	abandoned := make(chan struct{}, 1)
+	conn, _ := open(t, srv, func(o *Options) {
+		o.Hooks.RequestDone = func(_ rails.ReqInfo, _ time.Duration, err error) {
+			if errors.Is(err, rails.ErrTimeout) {
+				abandoned <- struct{}{}
+			}
+		}
+	})
+	ctx, cancel := context.WithCancel(t.Context())
+	go func() {
+		_, _ = conn.Send(ctx, Send{Message: "createOrder", ClientRequestID: "gone", Content: map[string]string{"clientRequestId": "gone"}})
+	}()
+	require.Equal(t, "createOrder", srv.NextMessage(settle).Message)
+	cancel()
+	<-abandoned
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := conn.Send(t.Context(), Send{Message: "createOrder", ClientRequestID: "order", Content: map[string]string{"clientRequestId": "order"}})
+		done <- err
+	}()
+	require.Equal(t, "createOrder", srv.NextMessage(settle).Message)
+	srv.Push(map[string]any{
+		"statusCode": 429, "body": "Too many messages",
+		"error": map[string]string{"slug": "TOO_MANY_REQUESTS", "code": "SYS-0003"}, "retryAfterSec": 1,
+	})
+	srv.Push(map[string]any{"resultType": "createOrder", "data": map[string]any{"statusCode": 200, "clientRequestId": "order"}})
+
+	select {
+	case err := <-done:
+		assert.NoError(t, err)
+	case <-time.After(settle):
+		t.Fatal("no answer")
+	}
+}
+
 // A command left unanswered on a handed-over socket fails when that socket is dropped, rather
 // than waiting on an answer that can no longer come.
 func TestAnUnansweredCommandOnAHandedOverSocketFails(t *testing.T) {
@@ -549,6 +589,96 @@ func TestAnUnansweredCommandOnAHandedOverSocketFails(t *testing.T) {
 		assert.ErrorIs(t, err, rails.ErrConnClosed)
 	case <-time.After(settle):
 		t.Fatal("the command was never settled")
+	}
+}
+
+// shutdownNotice tells socket 0 to drain and waits until the connection has seen it.
+func shutdownNotice(t *testing.T, srv *perpstest.Server, s *sink) {
+	t.Helper()
+	srv.PushTo(0, map[string]any{"resultType": "connectionShutdown", "data": map[string]any{"statusCode": 200, "forceCloseInMs": 60000, "ts": 1756000000000}})
+	for f := range s.frames {
+		if f.ResultType == "connectionShutdown" {
+			return
+		}
+	}
+}
+
+func refuseUpgrades(srv *perpstest.Server) {
+	srv.SetReject(func(w http.ResponseWriter, _ *http.Request) bool {
+		http.Error(w, "draining", http.StatusServiceUnavailable)
+		return true
+	})
+}
+
+func subscribe(ctx context.Context, conn *Conn) <-chan error {
+	done := make(chan error, 1)
+	go func() {
+		_, err := conn.Send(ctx, Send{Message: "subscribe", ClientRequestID: "sub", ReplyTypes: []string{"subscribed"}, Reconfigures: true,
+			Content: map[string]string{"clientRequestId": "sub"}})
+		done <- err
+	}()
+	return done
+}
+
+// A command that changes what a socket asks for is not written to a draining one: the
+// replacement, already dialled, would not carry it.
+func TestAReconfiguringCommandWaitsForTheReplacement(t *testing.T) {
+	srv := perpstest.New(t)
+	conn, s := open(t, srv, nil)
+	s.waitLifecycle(t, true)
+	refuseUpgrades(srv)
+	shutdownNotice(t, srv, s)
+
+	done := subscribe(t.Context(), conn)
+	time.Sleep(100 * time.Millisecond)
+	assert.Empty(t, srv.Received(), "sent on the draining socket")
+
+	srv.SetReject(nil)
+	require.Equal(t, "subscribe", srv.NextMessage(settle).Message)
+	assert.Equal(t, 2, srv.Connections())
+	srv.Push(map[string]any{"resultType": "subscribed", "data": map[string]any{"statusCode": 200, "clientRequestId": "sub"}})
+	select {
+	case err := <-done:
+		assert.NoError(t, err)
+	case <-time.After(settle):
+		t.Fatal("no answer")
+	}
+}
+
+// The replacement asks for what is confirmed when it dials, so it waits for a change in flight.
+func TestTheReplacementDialsOnceAReconfiguringCommandIsAnswered(t *testing.T) {
+	srv := perpstest.New(t)
+	conn, s := open(t, srv, nil)
+	s.waitLifecycle(t, true)
+
+	done := subscribe(t.Context(), conn)
+	require.Equal(t, "subscribe", srv.NextMessage(settle).Message)
+	shutdownNotice(t, srv, s)
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, 1, srv.Connections(), "dialled before the answer")
+
+	srv.PushTo(0, map[string]any{"resultType": "subscribed", "data": map[string]any{"statusCode": 200, "clientRequestId": "sub"}})
+	require.NoError(t, <-done)
+	srv.WaitConnections(2, settle)
+}
+
+// A command held for a replacement that never came up was never sent, so it may be sent again.
+func TestAReconfiguringCommandHeldWhenTheSocketDiesIsNotSent(t *testing.T) {
+	srv := perpstest.New(t)
+	conn, s := open(t, srv, nil)
+	s.waitLifecycle(t, true)
+	refuseUpgrades(srv)
+	shutdownNotice(t, srv, s)
+
+	done := subscribe(t.Context(), conn)
+	time.Sleep(50 * time.Millisecond)
+	srv.CloseConn(0, 1012, "Service restarting. Please reconnect.")
+
+	select {
+	case err := <-done:
+		assert.ErrorIs(t, err, rails.ErrNotSent)
+	case <-time.After(settle):
+		t.Fatal("no answer")
 	}
 }
 
