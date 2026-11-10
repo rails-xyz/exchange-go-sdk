@@ -13,8 +13,8 @@ and versions follow [semantic versioning](https://semver.org/).
 ### Changed
 
 - `Events()` no longer applies backpressure. The connection never waits for the consumer: what
-  does not fit in the buffer is queued, and past 16 times the buffer public market data is
-  dropped until the consumer catches up. Fills, rejections, account streams and connection
+  does not fit in the buffer is queued, and past 16 times the buffer (16,384 events at the
+  default `WithEventBuffer` of 1024) public market data is dropped until the consumer catches up. Fills, rejections, account streams and connection
   events are never dropped. `Close` hands over what still fits in the buffer and drops the rest.
 - `Hooks.HTTPDone` is documented as covering API calls only; the token mint is not reported.
 
