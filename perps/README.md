@@ -152,8 +152,11 @@ every class.
 
 ## Events and streams
 
-Fills, rejections, stream data and connection events arrive on `conn.Events()`. The channel is
-buffered and applies backpressure rather than dropping frames, so it must be read.
+Fills, rejections, stream data and connection events arrive on `conn.Events()`. Read it
+steadily: the connection never waits for it, so what does not fit in its buffer waits in the
+SDK, and once that backlog passes 16 times the buffer, public trades and order book changes are
+dropped until it has been read. `perps.MarketDataDropped` then says how many, and a book kept
+from deltas is rebuilt from a fresh snapshot. Nothing else is ever dropped.
 
 A connection receives the `orders` stream, always, plus whatever `perps.WithSubscriptions` asked
 for at `Connect`; `conn.Subscribe` and `conn.Unsubscribe` change that later and return the
@@ -174,6 +177,8 @@ for event := range conn.Events() {
 		// e.Trades: fills on your orders, every market
 	case perps.PublicTrades, perps.OrderBookDelta:
 		// market data for the connection's market
+	case perps.MarketDataDropped:
+		// market data was dropped while you were behind: take a fresh snapshot
 	case perps.SessionBackfill:
 		if !e.Resumed {
 			// the session could not be resumed after a reconnect: rebuild from client.OpenOrders

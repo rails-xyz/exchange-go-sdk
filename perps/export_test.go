@@ -26,6 +26,7 @@ type (
 )
 
 var (
+	IsMarketData         = isMarketData
 	ToEvent              = toEvent
 	OrderFromWire        = wireOrder.toOrder
 	TradesFromWire       = tradesFromWire

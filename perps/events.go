@@ -89,6 +89,15 @@ type OrderBookDelta struct {
 	Ts     int64
 }
 
+// MarketDataDropped follows a stretch in which [Conn.Events] fell so far behind that public
+// trades and order book changes were dropped; Dropped counts them. Nothing else is ever dropped.
+// What arrives after it is complete again, so a book is rebuilt from a fresh
+// [Conn.EmitPublicOrderBook].
+type MarketDataDropped struct {
+	At      time.Time
+	Dropped int
+}
+
 // Unknown is a frame this release has no type for. That includes two kinds of order-stream
 // frame the exchange sends about commands this connection did not issue: the answers to a
 // command sent on another connection of the same account, and the second "order cancelled"
@@ -109,4 +118,15 @@ func (ServerError) isEvent()        {}
 func (Trades) isEvent()             {}
 func (PublicTrades) isEvent()       {}
 func (OrderBookDelta) isEvent()     {}
+func (MarketDataDropped) isEvent()  {}
 func (Unknown) isEvent()            {}
+
+// isMarketData reports an event a consumer rebuilds from a snapshot, so one it can do without
+// while it catches up.
+func isMarketData(e Event) bool {
+	switch e.(type) {
+	case PublicTrades, OrderBookDelta:
+		return true
+	}
+	return false
+}

@@ -27,7 +27,7 @@ const (
 )
 
 // onFrame turns a frame into a typed event and delivers it. It runs on the connection's owner
-// goroutine, so a consumer that stops reading stalls the connection rather than losing frames.
+// goroutine and never waits for the consumer.
 func (c *Conn) onFrame(frame ws.Frame) {
 	event, resumed := c.onResumed(frame)
 	if resumed && event == nil {
