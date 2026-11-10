@@ -154,8 +154,9 @@ every class.
 
 Fills, rejections, stream data and connection events arrive on `conn.Events()`. Read it
 steadily: the connection never waits for it, so what does not fit in its buffer waits in the
-SDK, and once that backlog passes 16 times the buffer, public trades and order book changes are
-dropped until it has been read. `perps.MarketDataDropped` then says how many, and a book kept
+SDK, and once that backlog passes 16 times the buffer (16,384 events at the default
+`perps.WithEventBuffer` of 1024), public trades and order book changes are dropped until it has
+been read. `perps.MarketDataDropped` then says how many, and a book kept
 from deltas is rebuilt from a fresh snapshot. Nothing else is ever dropped.
 
 A connection receives the `orders` stream, always, plus whatever `perps.WithSubscriptions` asked

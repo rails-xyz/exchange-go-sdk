@@ -182,9 +182,10 @@ func (c *Conn) requireMarket(market string) error {
 }
 
 // Events delivers fills, rejects, stream data and lifecycle changes. Read it steadily: what
-// does not fit in its buffer waits in the SDK, and once that backlog passes 16 times the buffer,
-// public trades and order book changes are dropped until it has been read, then
-// [MarketDataDropped] says so. Nothing else is ever dropped, and the connection never waits.
+// does not fit in its buffer waits in the SDK, and once that backlog passes 16 times the buffer
+// (16,384 events at the default [WithEventBuffer] of 1024), public trades and order book changes
+// are dropped until it has been read, then [MarketDataDropped] says so. Nothing else is ever
+// dropped, and the connection never waits.
 func (c *Conn) Events() <-chan Event { return c.events.Events() }
 
 // Ping measures the round trip of an application-level ping, from write to pong. It is the

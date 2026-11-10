@@ -165,8 +165,8 @@ With no connection at all, `client.CancelAllOrders` sweeps one contract or the w
 ### Events
 
 `conn.Events()` delivers typed events. Read it steadily: the connection never waits for it, and
-once the backlog passes 16 times the buffer, contract, quote, order book and public trade updates
-are dropped until it has been read, then `options.MarketDataDropped` says how many. Nothing else is
+once the backlog passes 16 times the buffer (16,384 events at the default `options.WithEventBuffer`
+of 1024), contract, quote, order book and public trade updates are dropped until it has been read, then `options.MarketDataDropped` says how many. Nothing else is
 ever dropped. For the contracts the orders stream is
 held for, answers to commands sent elsewhere arrive too: a fill no command of this connection was
 waiting for is an `options.OrderFilled`, a refusal an `options.OrderRejected`, a cancellation an
