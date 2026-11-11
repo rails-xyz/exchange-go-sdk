@@ -60,12 +60,20 @@ func WithEnvironment(env Environment) Option {
 }
 
 // WithHTTPClient supplies the client used for every HTTP call and for the WebSocket upgrade.
-// Wrap its transport to add tracing of your own. nil keeps the default.
+// Wrap its transport to add tracing of your own. nil keeps the default. A client with no
+// CheckRedirect of its own is used as a copy that follows redirects only within the origin,
+// like the default.
 func WithHTTPClient(hc *http.Client) Option {
 	return func(c *Config) {
-		if hc != nil {
-			c.HTTPClient = hc
+		if hc == nil {
+			return
 		}
+		if hc.CheckRedirect == nil {
+			guarded := *hc
+			guarded.CheckRedirect = sameOriginRedirects
+			hc = &guarded
+		}
+		c.HTTPClient = hc
 	}
 }
 

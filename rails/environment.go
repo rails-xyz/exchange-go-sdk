@@ -1,13 +1,17 @@
 package rails
 
-import "log/slog"
+import (
+	"fmt"
+	"io"
+	"log/slog"
+)
 
 // Credentials are the API key and secret minted in the Rails app. They are exchanged for a
 // short-lived bearer token, and never authenticate a request or a WebSocket directly.
 //
 // Both values are redacted when a Credentials value is formatted with fmt or logged with
-// log/slog. A struct holding it that is encoded field by field, as JSON for instance, still
-// carries both.
+// log/slog. A struct that holds it in an unexported field, or that is encoded field by field,
+// as JSON for instance, still carries both: neither can reach these methods.
 type Credentials struct {
 	APIKey    string
 	APISecret string
@@ -17,7 +21,7 @@ const redactedCredentials = "rails.Credentials{APIKey:<redacted> APISecret:<reda
 
 func (Credentials) String() string { return redactedCredentials }
 
-func (Credentials) GoString() string { return redactedCredentials }
+func (Credentials) Format(f fmt.State, _ rune) { _, _ = io.WriteString(f, redactedCredentials) }
 
 func (Credentials) LogValue() slog.Value { return slog.StringValue(redactedCredentials) }
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +25,9 @@ func TestNewConfigDefaults(t *testing.T) {
 	assert.True(t, cfg.Telemetry)
 }
 
-func TestDefaultClientFollowsRedirectsOnlyWithinTheOrigin(t *testing.T) {
+// A supplied client with no redirect policy of its own would follow Go's, which forwards the
+// credential headers to any host.
+func TestClientsFollowRedirectsOnlyWithinTheOrigin(t *testing.T) {
 	elsewhere := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	t.Cleanup(elsewhere.Close)
 	mux := http.NewServeMux()
@@ -38,15 +41,23 @@ func TestDefaultClientFollowsRedirectsOnlyWithinTheOrigin(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	for path, want := range map[string]int{
-		"/moved": http.StatusOK,
-		"/away":  http.StatusTemporaryRedirect,
+	for name, client := range map[string]*http.Client{
+		"default":  NewConfig().HTTPClient,
+		"supplied": NewConfig(WithHTTPClient(&http.Client{Timeout: time.Minute})).HTTPClient,
 	} {
-		resp, err := NewConfig().HTTPClient.Get(srv.URL + path)
-		require.NoError(t, err)
-		_ = resp.Body.Close()
-		assert.Equal(t, want, resp.StatusCode, path)
+		for path, want := range map[string]int{
+			"/moved": http.StatusOK,
+			"/away":  http.StatusTemporaryRedirect,
+		} {
+			resp, err := client.Get(srv.URL + path)
+			require.NoError(t, err)
+			_ = resp.Body.Close()
+			assert.Equal(t, want, resp.StatusCode, name+" "+path)
+		}
 	}
+
+	own := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return nil }}
+	assert.Same(t, own, NewConfig(WithHTTPClient(own)).HTTPClient, "a client's own policy was replaced")
 }
 
 // Whoever runs the process outranks whoever compiled it.

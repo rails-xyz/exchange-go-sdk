@@ -16,9 +16,11 @@ func TestCredentialsAreRedacted(t *testing.T) {
 	slog.New(slog.NewJSONHandler(&logged, nil)).Info("x", "creds", creds)
 
 	for name, out := range map[string]string{
-		"%v":   fmt.Sprintf("%v", creds),
-		"%#v":  fmt.Sprintf("%#v", creds),
-		"slog": logged.String(),
+		"%v":     fmt.Sprintf("%v", creds),
+		"%#v":    fmt.Sprintf("%#v", creds),
+		"%d":     fmt.Sprintf("%d", creds),
+		"holder": fmt.Sprintf("%+v", struct{ Creds Credentials }{creds}),
+		"slog":   logged.String(),
 	} {
 		assert.NotContains(t, out, "my-key", name)
 		assert.NotContains(t, out, "hunter2", name)
