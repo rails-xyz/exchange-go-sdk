@@ -839,7 +839,7 @@ components:
               statusCode: 429
               body: Subscription limit reached (max 100)
               error:
-                slug: SUBSCRIPTION_LIMIT
+                slug: SUBSCRIPTION_LIMIT_EXCEEDED
                 code: "SYS-0012"
               clientRequestId: cfff0f58-8780-4cf2-b3d3-6439fed37304
 

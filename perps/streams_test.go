@@ -23,7 +23,7 @@ func TestSubscribeRefusalIsNotAnEvent(t *testing.T) {
 	crid := command(t, srv, "subscribe").ClientRequestID()
 	srv.Push(map[string]any{"resultType": "subscribe", "data": map[string]any{
 		"statusCode": 429, "body": "Subscription limit reached (max 100)", "clientRequestId": crid,
-		"error": map[string]string{"slug": "SUBSCRIPTION_LIMIT", "code": "SYS-0012"},
+		"error": map[string]string{"slug": "SUBSCRIPTION_LIMIT_EXCEEDED", "code": "SYS-0012"},
 	}})
 
 	require.ErrorIs(t, spectest.Receive(t, got).err, rails.ErrRateLimited)

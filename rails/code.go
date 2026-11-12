@@ -35,7 +35,8 @@ const (
 	CodeSoftBanned Code = "SYS-0011"
 	// CodeSubscriptionLimit is a connection that would exceed its stream subscriptions.
 	CodeSubscriptionLimit Code = "SYS-0012"
-	// CodeConnectionLimit is an account at its maximum connections to a market.
+	// CodeConnectionLimit is an account at its maximum open WebSocket connections. It carries no
+	// RetryAfter: the limit clears when one of the account's connections closes.
 	CodeConnectionLimit Code = "SYS-0013"
 	// CodeTradingDisabled is an account that may not trade: disabled, or its wallet unverified.
 	CodeTradingDisabled Code = "SYS-0014"
