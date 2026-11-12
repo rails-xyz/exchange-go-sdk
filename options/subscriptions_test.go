@@ -108,7 +108,7 @@ func TestResumeRestoresEveryOtherScope(t *testing.T) {
 	srv.Push(frame("subscribed", "", map[string]any{"statusCode": 200, "clientRequestId": settlements.ClientRequestID()}))
 	srv.Push(frame("subscribe", "", map[string]any{
 		"statusCode": 429, "body": "Subscription limit reached (max 100)", "clientRequestId": quotes.ClientRequestID(),
-		"error": map[string]string{"slug": "SUBSCRIPTION_LIMIT", "code": "SYS-0012"},
+		"error": map[string]string{"slug": "SUBSCRIPTION_LIMIT_EXCEEDED", "code": "SYS-0012"},
 	}))
 
 	for event := range conn.Events() {
