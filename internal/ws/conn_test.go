@@ -220,8 +220,7 @@ func TestGivingUpReturnsTimeoutWithTheRequestID(t *testing.T) {
 	require.NoError(t, err, "the connection was wedged by the answer nobody wanted")
 }
 
-// A consumer that stops taking frames stalls the owner, and a call must still come back on its
-// own deadline.
+// An owner held up in a callback must not hold a caller past its own deadline.
 func TestADeadlineHoldsWhileTheConsumerIsStalled(t *testing.T) {
 	srv := perpstest.New(t)
 	srv.SetAutoPong(false)

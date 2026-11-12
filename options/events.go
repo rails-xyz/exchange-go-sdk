@@ -170,6 +170,15 @@ type ServerError struct {
 	At  time.Time
 }
 
+// MarketDataDropped follows a stretch in which [Conn.Events] fell so far behind that contract,
+// quote, order book and public trade updates were dropped; Dropped counts them. Nothing else is
+// ever dropped. What arrives after it is complete again, so a book is rebuilt from a fresh
+// [Conn.EmitOrderBook].
+type MarketDataDropped struct {
+	At      time.Time
+	Dropped int
+}
+
 // Unknown is a frame this release has no type for. That includes a repeated acknowledgement of
 // a [Conn.CancelAllOrders] sweep, and a snapshot no Emit of this connection was waiting for,
 // such as one asked for on another connection of the account. Raw is the whole frame as it
@@ -196,4 +205,15 @@ func (SubscriptionLost) isEvent()   {}
 func (ConnectionShutdown) isEvent() {}
 func (SessionBackfill) isEvent()    {}
 func (ServerError) isEvent()        {}
+func (MarketDataDropped) isEvent()  {}
 func (Unknown) isEvent()            {}
+
+// isMarketData reports an event a consumer rebuilds from a snapshot, so one it can do without
+// while it catches up.
+func isMarketData(e Event) bool {
+	switch e.(type) {
+	case ContractUpdate, QuoteUpdate, OrderBookDelta, PublicTrades:
+		return true
+	}
+	return false
+}

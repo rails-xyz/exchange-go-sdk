@@ -35,9 +35,8 @@ type Options struct {
 
 	// OnFrame receives every frame the connection did not consume as a command's answer;
 	// OnConnected and OnDisconnected report each socket coming up or going away. All three run
-	// on the connection's owner goroutine, so one that blocks stalls the connection — which for
-	// order traffic beats dropping frames — and all three must return once [Conn.Close] has
-	// been called.
+	// on the connection's owner goroutine and must not block: it also reads the socket, which
+	// answers the server's pings, and routes every command's answer.
 	OnFrame        func(Frame)
 	OnConnected    func()
 	OnDisconnected func(rails.DisconnectReason)

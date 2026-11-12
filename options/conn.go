@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rails-xyz/exchange-go-sdk/internal/outbox"
 	"github.com/rails-xyz/exchange-go-sdk/internal/telemetry"
 	"github.com/rails-xyz/exchange-go-sdk/internal/ws"
 	"github.com/rails-xyz/exchange-go-sdk/rails"
@@ -144,7 +145,7 @@ type Conn struct {
 	overHTTP httpOrders
 	tel      *telemetry.Collector
 	pacer    rails.Pacer
-	events   chan Event
+	events   *outbox.Outbox[Event]
 	scope    Scope
 	connID   string
 
@@ -159,9 +160,6 @@ type Conn struct {
 	// goroutine touches it.
 	resuming map[string]resumedChange
 
-	// closed releases a publish blocked on a consumer that stopped reading, so Close never
-	// waits on one.
-	closed    chan struct{}
 	closeOnce sync.Once
 }
 
@@ -188,10 +186,9 @@ func (c *Client) Connect(ctx context.Context, scope Scope, opts ...ConnOption) (
 		overHTTP: c,
 		tel:      c.tel,
 		pacer:    c.cfg.Pacer,
-		events:   make(chan Event, cfg.eventBuffer),
+		events:   newOutbox(cfg.eventBuffer),
 		scope:    scope,
 		connID:   uuid.NewString(),
-		closed:   make(chan struct{}),
 		changing: make(chan struct{}, 1),
 		resuming: map[string]resumedChange{},
 	}
@@ -225,6 +222,7 @@ func (c *Client) Connect(ctx context.Context, scope Scope, opts ...ConnOption) (
 		},
 	})
 	if err != nil {
+		conn.events.Close()
 		return nil, err
 	}
 	conn.ws = underlying
@@ -289,9 +287,12 @@ func (c *Conn) guardContract(op, contract string) error {
 	return c.guard(op, contract)
 }
 
-// Events delivers fills, rejections, cancellations and lifecycle changes. It must be drained: a
-// full buffer stalls the connection rather than dropping frames.
-func (c *Conn) Events() <-chan Event { return c.events }
+// Events delivers fills, rejections, cancellations, stream data and lifecycle changes. Read it
+// steadily: what does not fit in its buffer waits in the SDK, and once that backlog passes 16
+// times the buffer (16,384 events at the default [WithEventBuffer] of 1024), contract, quote,
+// order book and public trade updates are dropped until it has been read, then
+// [MarketDataDropped] says so. Nothing else is ever dropped, and the connection never waits.
+func (c *Conn) Events() <-chan Event { return c.events.Events() }
 
 // Ping measures an application-level round trip, write to pong, over the path orders take.
 func (c *Conn) Ping(ctx context.Context) (time.Duration, error) {
@@ -309,20 +310,22 @@ func (c *Conn) Ping(ctx context.Context) (time.Duration, error) {
 	return reply.At.Sub(reply.SentAt), nil
 }
 
-// publish delivers an event, blocking until the consumer takes it or the connection closes.
-func (c *Conn) publish(event Event) {
-	select {
-	case c.events <- event:
-	case <-c.closed:
-	}
-}
+func (c *Conn) publish(event Event) { c.events.Publish(event) }
 
 // Close shuts the connection down and waits for every goroutine it started. Events is closed,
-// so a consumer ranging over it finishes too — including one that had stopped reading.
+// so a consumer ranging over it finishes too — including one that had stopped reading. Events
+// that no longer fit in its buffer are dropped.
 func (c *Conn) Close() {
 	c.closeOnce.Do(func() {
-		close(c.closed)
 		c.ws.Close()
-		close(c.events)
+		c.events.Close()
+	})
+}
+
+func newOutbox(buffer int) *outbox.Outbox[Event] {
+	return outbox.New(outbox.Options[Event]{
+		Buffer:    buffer,
+		Droppable: isMarketData,
+		Dropped:   func(n int) Event { return MarketDataDropped{At: time.Now(), Dropped: n} },
 	})
 }
