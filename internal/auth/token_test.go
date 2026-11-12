@@ -179,6 +179,32 @@ func TestRateLimitedRefreshKeepsServingTheOldToken(t *testing.T) {
 	assert.ErrorIs(t, err, rails.ErrRateLimited)
 }
 
+// A refresh refused for longer than the token has left keeps the refusal once the token expires.
+func TestRefusedRefreshOutlivesTheToken(t *testing.T) {
+	c := &clock{now: time.Unix(1_700_000_000, 0)}
+	server := &tokenServer{clock: c, respond: func(w http.ResponseWriter, mint int64) bool {
+		if mint == 1 {
+			return false
+		}
+		w.Header().Set("Retry-After", "600")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"error":{"slug":"TOO_MANY_REQUESTS","code":"SYS-0003"},"message":"Too Many Requests"}`))
+		return true
+	}}
+	src := newSource(t, server.start(t), c)
+
+	_, err := src.Token(t.Context())
+	require.NoError(t, err)
+	c.Advance(1500 * time.Second) // past refresh, 300s before expiry
+	_, err = src.Token(t.Context())
+	require.NoError(t, err)
+	c.Advance(301 * time.Second) // expired, still inside the 600s refusal
+
+	_, err = src.Token(t.Context())
+	assert.ErrorIs(t, err, rails.ErrRateLimited)
+	assert.EqualValues(t, 2, server.mints.Load(), "minted inside the refusal")
+}
+
 // exp is authoritative: expires_in describes the mint, exp describes the token.
 func TestExpiryPrefersTheJWTClaim(t *testing.T) {
 	c := &clock{now: time.Unix(1_700_000_000, 0)}

@@ -122,8 +122,8 @@ The hooks:
 - `RequestAcked(ReqInfo, time.Duration)`: send to `202` acknowledgement.
 - `RequestDone(ReqInfo, time.Duration, error)`: send to the answer, or the failure that replaced
   it.
-- `HTTPDone(HTTPInfo, time.Duration, error)`: every HTTP attempt, retries included, with its
-  status or its error.
+- `HTTPDone(HTTPInfo, time.Duration, error)`: every HTTP attempt of an API call, retries
+  included, with its status or its error. The token mint is not reported.
 - `Paced(PaceInfo)`: a call the pacer delayed or refused, with the delay.
 - `Throttled(OpClass, time.Duration)`: the exchange rate-limited a call and the pacer is holding
   the class back for that long.

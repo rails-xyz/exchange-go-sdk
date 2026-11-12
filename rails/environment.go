@@ -1,11 +1,29 @@
 package rails
 
+import (
+	"fmt"
+	"io"
+	"log/slog"
+)
+
 // Credentials are the API key and secret minted in the Rails app. They are exchanged for a
 // short-lived bearer token, and never authenticate a request or a WebSocket directly.
+//
+// Both values are redacted when a Credentials value is formatted with fmt or logged with
+// log/slog. A struct that holds it in an unexported field, or that is encoded field by field,
+// as JSON for instance, still carries both: neither can reach these methods.
 type Credentials struct {
 	APIKey    string
 	APISecret string
 }
+
+const redactedCredentials = "rails.Credentials{APIKey:<redacted> APISecret:<redacted>}"
+
+func (Credentials) String() string { return redactedCredentials }
+
+func (Credentials) Format(f fmt.State, _ rune) { _, _ = io.WriteString(f, redactedCredentials) }
+
+func (Credentials) LogValue() slog.Value { return slog.StringValue(redactedCredentials) }
 
 // Environment is the full set of hosts a client talks to. The WebSocket host does not follow
 // the pattern of the HTTP hosts, so every URL is named rather than composed from a base domain.

@@ -32,7 +32,7 @@ func NewConfig(opts ...Option) *Config {
 		Environment: Production(),
 		// Not http.DefaultClient: an application that sets a Timeout on that shared instance
 		// would break every WebSocket dial in the SDK.
-		HTTPClient: &http.Client{},
+		HTTPClient: &http.Client{CheckRedirect: sameOriginRedirects},
 		Logger:     slog.New(slog.DiscardHandler),
 		Telemetry:  true,
 	}
@@ -45,18 +45,35 @@ func NewConfig(opts ...Option) *Config {
 	return cfg
 }
 
+// sameOriginRedirects follows a redirect only within the origin it started at: anywhere else,
+// the credential headers would go with it.
+func sameOriginRedirects(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 || req.URL.Scheme != via[0].URL.Scheme || req.URL.Host != via[0].URL.Host {
+		return http.ErrUseLastResponse
+	}
+	return nil
+}
+
 // WithEnvironment selects the hosts to talk to. Defaults to [Production].
 func WithEnvironment(env Environment) Option {
 	return func(c *Config) { c.Environment = env }
 }
 
 // WithHTTPClient supplies the client used for every HTTP call and for the WebSocket upgrade.
-// Wrap its transport to add tracing of your own. nil keeps the default.
+// Wrap its transport to add tracing of your own. nil keeps the default. A client with no
+// CheckRedirect of its own is used as a copy that follows redirects only within the origin,
+// like the default.
 func WithHTTPClient(hc *http.Client) Option {
 	return func(c *Config) {
-		if hc != nil {
-			c.HTTPClient = hc
+		if hc == nil {
+			return
 		}
+		if hc.CheckRedirect == nil {
+			guarded := *hc
+			guarded.CheckRedirect = sameOriginRedirects
+			hc = &guarded
+		}
+		c.HTTPClient = hc
 	}
 }
 

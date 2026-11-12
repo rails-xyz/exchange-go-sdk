@@ -1,11 +1,31 @@
 package rails
 
 import (
+	"bytes"
+	"fmt"
+	"log/slog"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestCredentialsAreRedacted(t *testing.T) {
+	creds := Credentials{APIKey: "my-key", APISecret: "hunter2"}
+	var logged bytes.Buffer
+	slog.New(slog.NewJSONHandler(&logged, nil)).Info("x", "creds", creds)
+
+	for name, out := range map[string]string{
+		"%v":     fmt.Sprintf("%v", creds),
+		"%#v":    fmt.Sprintf("%#v", creds),
+		"%d":     fmt.Sprintf("%d", creds),
+		"holder": fmt.Sprintf("%+v", struct{ Creds Credentials }{creds}),
+		"slog":   logged.String(),
+	} {
+		assert.NotContains(t, out, "my-key", name)
+		assert.NotContains(t, out, "hunter2", name)
+	}
+}
 
 // A host missing from a preset stops its client from starting.
 func TestPresetsNameEveryHost(t *testing.T) {
