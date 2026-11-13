@@ -73,9 +73,11 @@ func limitsForAccountType(accountType string) pace.Limits {
 	return DefaultLimits().windows()
 }
 
-// throttled recognises a rate limit or a creation ban, and how long it asked for.
+// throttled recognises a rate limit or a creation ban, and how long it asked for. A 429 counts
+// without a code.
 func throttled(err *rails.Error) (time.Duration, bool) {
-	if err.RetryAfter <= 0 || (err.Code != rails.CodeTooManyRequests && err.Code != CodeCreateOrderBanned) {
+	throttle := err.StatusCode == 429 || err.Code == rails.CodeTooManyRequests || err.Code == CodeCreateOrderBanned
+	if err.RetryAfter <= 0 || !throttle {
 		return 0, false
 	}
 	return err.RetryAfter, true
