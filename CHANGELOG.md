@@ -35,6 +35,12 @@ and versions follow [semantic versioning](https://semver.org/).
 - A perps `Subscribe` or `Unsubscribe` during a server-initiated handover waits for the
   replacement connection instead of going out on the draining one, so the replacement keeps the
   change.
+- A call already waiting on the pacer when a longer cooldown starts now waits that cooldown out
+  instead of going out at its original turn.
+- The pacer cools a class down on any `429` that names a `Retry-After`, not only on one carrying
+  `rails.CodeTooManyRequests`.
+- An HTTP call that waited on the pacer or a retry delay fetches its token after the wait, so a
+  long wait no longer sends a token that expired meanwhile.
 
 ## [1.3.0]
 
