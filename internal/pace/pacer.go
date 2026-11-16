@@ -84,34 +84,58 @@ func New(cfg Config) *Pacer {
 
 // Wait implements [rails.Pacer].
 func (p *Pacer) Wait(ctx context.Context, class rails.OpClass, op string) error {
-	delay, release, hooks := p.reserve(class)
-	if delay == 0 {
-		return nil
-	}
-	if p.cfg.FailFast {
+	var waited time.Duration
+	for {
+		delay, at, release, hooks := p.reserve(class)
+		if delay == 0 {
+			if waited > 0 {
+				hooks.Paced(rails.PaceInfo{Class: class, Op: op, Delay: waited})
+			}
+			return nil
+		}
+		if p.cfg.FailFast {
+			release()
+			hooks.Paced(rails.PaceInfo{Class: class, Op: op, Delay: delay, Refused: true})
+			return fmt.Errorf("%w: %w: %w", rails.ErrNotSent, rails.ErrPaced, &rails.Error{
+				Op:         op,
+				Message:    fmt.Sprintf("the pacer would wait %s", delay),
+				RetryAfter: delay,
+			})
+		}
+		if err := sleep(ctx, delay); err != nil {
+			release()
+			return err
+		}
+		waited += delay
+		// A throttle seen meanwhile may hold the class past its turn: book again after it.
+		if !p.coolingDownAt(class, at) {
+			hooks.Paced(rails.PaceInfo{Class: class, Op: op, Delay: waited})
+			return nil
+		}
 		release()
-		hooks.Paced(rails.PaceInfo{Class: class, Op: op, Delay: delay, Refused: true})
-		return fmt.Errorf("%w: %w: %w", rails.ErrNotSent, rails.ErrPaced, &rails.Error{
-			Op:         op,
-			Message:    fmt.Sprintf("the pacer would wait %s", delay),
-			RetryAfter: delay,
-		})
 	}
-	timer := time.NewTimer(delay)
+}
+
+func sleep(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
 	defer timer.Stop()
 	select {
 	case <-timer.C:
-		hooks.Paced(rails.PaceInfo{Class: class, Op: op, Delay: delay})
 		return nil
 	case <-ctx.Done():
-		release()
 		return ctx.Err()
 	}
 }
 
+func (p *Pacer) coolingDownAt(class rails.OpClass, at time.Time) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.cooldown[class].After(at) || p.cooldown[p.cfg.All].After(at)
+}
+
 // reserve books one call on the class's and the All class's buckets, at the first moment every
 // one of them has room; the func gives the bookings back.
-func (p *Pacer) reserve(class rails.OpClass) (time.Duration, func(), rails.Hooks) {
+func (p *Pacer) reserve(class rails.OpClass) (time.Duration, time.Time, func(), rails.Hooks) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -145,7 +169,7 @@ func (p *Pacer) reserve(class rails.OpClass) (time.Duration, func(), rails.Hooks
 			}
 		}
 	}
-	return at.Sub(now), release, p.hooks
+	return at.Sub(now), at, release, p.hooks
 }
 
 // Observe implements [rails.Pacer]: a throttle puts the class on cooldown for as long as the

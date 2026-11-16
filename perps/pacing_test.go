@@ -150,6 +150,10 @@ func TestPacerCoolsDownOnTheExchangesWord(t *testing.T) {
 		"429 without a Retry-After": {
 			err: &rails.Error{StatusCode: 429, Code: rails.CodeTooManyRequests},
 		},
+		"429 without a code": {
+			err:  &rails.Error{StatusCode: 429, RetryAfter: 3 * time.Second},
+			want: 3*time.Second + margin,
+		},
 		"400": {
 			err: &rails.Error{StatusCode: 400, Code: rails.CodeBadRequest},
 		},
@@ -201,6 +205,25 @@ func TestPacerSpacesCallsAfterACooldown(t *testing.T) {
 		350 * time.Millisecond, 350 * time.Millisecond, 350 * time.Millisecond, 350 * time.Millisecond,
 		1250 * time.Millisecond, 1500 * time.Millisecond,
 	}, delays)
+}
+
+func TestPacerHonoursACooldownThatStartsMeanwhile(t *testing.T) {
+	clk := &clock{now: dayStart}
+	p := perps.NewPacer()
+	perps.SetPacerClock(p, clk.Now)
+	p.Observe(perps.ClassOrderCreate, &rails.Error{Code: rails.CodeTooManyRequests, RetryAfter: 100 * time.Millisecond})
+
+	start := time.Now()
+	waited := make(chan time.Duration)
+	go func() {
+		assert.NoError(t, p.Wait(t.Context(), perps.ClassOrderCreate, "createOrder"))
+		waited <- time.Since(start)
+	}()
+	time.Sleep(50 * time.Millisecond)
+	p.Observe(perps.ClassOrderCreate, &rails.Error{Code: rails.CodeTooManyRequests, RetryAfter: 500 * time.Millisecond})
+
+	// The clock stands still, so the second cooldown runs 750ms from the same instant.
+	assert.GreaterOrEqual(t, <-waited, 350*time.Millisecond+750*time.Millisecond)
 }
 
 // A shorter throttle arriving during a longer cooldown does not cut it short.

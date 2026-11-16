@@ -89,9 +89,11 @@ func (c *Client) do(ctx context.Context, req call, out any) error {
 	for attempt := range attempts {
 		// A token failure has already been through the source's own cache and fallback, so
 		// retrying here would only mint again.
-		token, err := c.tokens.Token(ctx)
-		if err != nil {
-			return fmt.Errorf("%s: %w", req.op, err)
+		if paced {
+			// The token's accountType picks the pacer's limits before it books.
+			if _, err := c.tokens.Token(ctx); err != nil {
+				return fmt.Errorf("%s: %w", req.op, err)
+			}
 		}
 
 		// Pacer first, so fail-fast refuses before the retry delay, which then counts the wait.
@@ -110,6 +112,12 @@ func (c *Client) do(ctx context.Context, req call, out any) error {
 			if err := wait(ctx, delay-time.Since(start)); err != nil {
 				return fmt.Errorf("%s: %w", req.op, err)
 			}
+		}
+
+		// After the waits, which can outlast a token fetched before them.
+		token, err := c.tokens.Token(ctx)
+		if err != nil {
+			return fmt.Errorf("%s: %w", req.op, err)
 		}
 
 		body, resp, err := c.attempt(ctx, req, endpoint, token, attempt)

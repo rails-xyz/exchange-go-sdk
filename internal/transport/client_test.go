@@ -178,6 +178,38 @@ func TestContextBoundsTheWholeCallIncludingRetries(t *testing.T) {
 
 // A token failure is terminal: the token source has already applied its own cache, fallback and
 // single-flight, so repeating the request would only mint again.
+// expiringToken hands out "stale" until freshFrom is set and reached, then "fresh".
+type expiringToken struct{ freshFrom atomic.Pointer[time.Time] }
+
+func (e *expiringToken) Token(context.Context) (string, error) {
+	if at := e.freshFrom.Load(); at != nil && !time.Now().Before(*at) {
+		return "fresh", nil
+	}
+	return "stale", nil
+}
+
+func TestTheTokenIsFetchedAfterTheRetryWait(t *testing.T) {
+	tokens := &expiringToken{}
+	var seen []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen = append(seen, r.Header.Get("Authorization"))
+		if len(seen) == 1 {
+			fresh := time.Now().Add(500 * time.Millisecond)
+			tokens.freshFrom.Store(&fresh)
+			w.Header().Set("Retry-After", "1")
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	cfg := rails.NewConfig(rails.WithHTTPClient(&http.Client{}))
+	require.NoError(t, New(cfg, tokens).Get(t.Context(), "op", "", srv.URL, "/x", nil, &struct{}{}))
+
+	assert.Equal(t, []string{"Bearer stale", "Bearer fresh"}, seen)
+}
+
 func TestTokenFailureIsNotRetried(t *testing.T) {
 	var requests atomic.Int64
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
