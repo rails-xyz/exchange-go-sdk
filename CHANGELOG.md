@@ -3,6 +3,45 @@
 Notable changes to this module. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and versions follow [semantic versioning](https://semver.org/).
 
+## [1.4.0]
+
+### Added
+
+- `perps.MarketDataDropped` and `options.MarketDataDropped`, delivered once a consumer that fell
+  behind on `Events()` has caught up, with the number of market data events dropped meanwhile.
+
+### Changed
+
+- `Events()` no longer applies backpressure. The connection never waits for the consumer: what
+  does not fit in the buffer is queued, and past 16 times the buffer (16,384 events at the
+  default `WithEventBuffer` of 1024) public market data is dropped until the consumer catches
+  up. Fills, rejections, account streams and connection events are never dropped. `Close`
+  hands over what still fits in the buffer and drops the rest.
+- `Hooks.HTTPDone` is documented as covering API calls only; the token mint is not reported.
+
+### Fixed
+
+- A consumer that falls behind on `Events()` no longer stalls the connection: the server's pings
+  are still answered and every command still gets its answer.
+- `rails.Credentials` no longer prints its API key or secret through `fmt` or `log/slog`. A
+  type that embeds it now prints as the redacted credentials alone.
+- The HTTP client follows a redirect only within the origin it started at; one to another
+  origin would have carried the API key and secret with it. This covers a client passed to
+  `WithHTTPClient` too, unless it sets its own `CheckRedirect`.
+- A token refresh refused for longer than the cached token had left is no longer retried as
+  soon as that token expires; the refusal is honoured until its `Retry-After`.
+- A bare rate-limit frame is no longer reported as dropping a command (`ErrNotSent`) when an
+  earlier command whose caller stopped waiting is still unanswered: either may be the one dropped.
+- A perps `Subscribe` or `Unsubscribe` during a server-initiated handover waits for the
+  replacement connection instead of going out on the draining one, so the replacement keeps the
+  change.
+- A call already waiting on the pacer when a longer cooldown starts now waits that cooldown out
+  instead of going out at its original turn.
+- The pacer cools a class down on any `429` that names a `Retry-After`, not only on one carrying
+  `rails.CodeTooManyRequests`.
+- An HTTP call that waited on the pacer or a retry delay fetches its token after the wait, so a
+  long wait no longer sends a token that expired meanwhile.
+
 ## [1.3.0]
 
 ### Added
