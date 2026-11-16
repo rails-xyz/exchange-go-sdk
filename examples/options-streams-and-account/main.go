@@ -92,9 +92,10 @@ func run() error {
 				return nil
 			}
 			switch e := event.(type) {
-			case options.Connected:
-				// Only the orders stream is replayed after a reconnect, so every other stream
-				// restarts from a snapshot, asked for off this loop, which keeps draining events.
+			case options.Connected, options.MarketDataDropped:
+				// Only the orders stream is replayed after a reconnect, and market data may have
+				// been dropped for falling behind, so the quotes restart from a snapshot, asked
+				// for off this loop, which keeps draining events.
 				go func() {
 					snapshot, err := quoteSnapshot(ctx, conn, *market, expiry)
 					if err != nil {

@@ -72,9 +72,10 @@ func run() error {
 				return nil
 			}
 			switch e := event.(type) {
-			case perps.Connected:
-				// On the first socket and after every reconnect the book restarts from a snapshot.
-				// It is asked for off this loop, which has to keep draining events meanwhile.
+			case perps.Connected, perps.MarketDataDropped:
+				// On every socket, and after deltas were dropped for falling behind, the book
+				// restarts from a snapshot. It is asked for off this loop, which has to keep
+				// draining events meanwhile.
 				generation := book.resync()
 				go func() {
 					snapshot, err := conn.EmitPublicOrderBook(ctx, *market)

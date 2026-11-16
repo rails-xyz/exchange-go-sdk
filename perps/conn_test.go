@@ -243,6 +243,47 @@ func TestDrainingUpgradeSurfacesRetryAfter(t *testing.T) {
 	assert.Equal(t, 5*time.Second, apiErr.RetryAfter)
 }
 
+// A consumer that stops reading Events while the order book floods in must not keep a command
+// from its answer: the connection never waits on it, and drops only market data.
+func TestAStalledConsumerDoesNotHoldUpCommands(t *testing.T) {
+	srv := perpstest.New(t)
+	conn, err := dial(t, srv).Connect(t.Context(), market, perps.WithPingInterval(0), perps.WithEventBuffer(1))
+	require.NoError(t, err)
+	t.Cleanup(conn.Close)
+	for range 200 {
+		srv.Push(envelope("publicOrderBookDelta", map[string]any{"statusCode": 200, "ts": 1,
+			"orders": []map[string]any{{"orderType": "buy", "price": "1", "quantity": "1"}}}))
+	}
+
+	result := make(chan error, 1)
+	go func() {
+		_, err := conn.CreateOrder(t.Context(), limitOrder())
+		result <- err
+	}()
+	crid := command(t, srv, "createOrder").ClientRequestID()
+	srv.Push(envelope("createOrder", map[string]any{
+		"statusCode": 200, "body": "order accepted", "clientRequestId": crid,
+		"order": orderObject(crid, "01JGPRJC7KHY8GP4FT6WRQG193", "active"),
+	}))
+	select {
+	case err := <-result:
+		require.NoError(t, err)
+	case <-time.After(settle):
+		t.Fatal("the answer waited for the consumer")
+	}
+
+	deltas := 0
+	for {
+		switch e := (<-conn.Events()).(type) {
+		case perps.OrderBookDelta:
+			deltas++
+		case perps.MarketDataDropped:
+			assert.Equal(t, 200, deltas+e.Dropped)
+			return
+		}
+	}
+}
+
 // Close must return even when nobody is draining Events, and must leave the channel closed so
 // a consumer ranging over it finishes too.
 func TestCloseCompletesWithAStalledConsumer(t *testing.T) {
