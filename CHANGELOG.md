@@ -3,6 +3,13 @@
 Notable changes to this module. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and versions follow [semantic versioning](https://semver.org/).
 
+## [1.5.0]
+
+### Added
+
+- `perps.CodeCreateOrderMinNotional` and `perps.CodeModifyOrderMinNotional`, returned when an
+  order's value (price × quantity) is below the market's minimum order value.
+
 ## [1.4.0]
 
 ### Added
