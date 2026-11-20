@@ -14,6 +14,8 @@ and versions follow [semantic versioning](https://semver.org/).
   `options.Queued.OrderClientRequestID` carries it back when the cancel is queued over HTTP.
 - `ClientRequestID` on `options.OpenOrder` and `options.RecentOrder`.
 - `CreateRequestID` on `options.Order`, `options.OpenOrder` and `options.RecentOrder`.
+- `perps.CodeCreateOrderMinNotional` and `perps.CodeModifyOrderMinNotional`, returned when an
+  order's value (price × quantity) is below the market's minimum order value.
 
 ### Changed
 
