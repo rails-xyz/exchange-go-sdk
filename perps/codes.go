@@ -32,6 +32,9 @@ const (
 	// CodeCreateOrderMarketHalted is the market's trading state not accepting the order, for
 	// example while the market is reduce-only or disabled.
 	CodeCreateOrderMarketHalted rails.Code = "PRP-0110"
+	// CodeCreateOrderMinNotional is an order whose value (price × quantity) is below the
+	// market's minimum order value.
+	CodeCreateOrderMinNotional rails.Code = "PRP-0111"
 
 	// CodeCancelOrderError is a cancel failure none of the other 02xx codes names.
 	CodeCancelOrderError rails.Code = "PRP-0200"
@@ -81,6 +84,9 @@ const (
 	// CodeModifyOrderMarketHalted is the market's trading state not accepting modifies from
 	// this account.
 	CodeModifyOrderMarketHalted rails.Code = "PRP-0315"
+	// CodeModifyOrderMinNotional is a modified order whose value (price × quantity) is below
+	// the market's minimum order value.
+	CodeModifyOrderMinNotional rails.Code = "PRP-0316"
 
 	// CodeOrderRejected is a pushed rejection none of the other 06xx codes names.
 	CodeOrderRejected rails.Code = "PRP-0600"
