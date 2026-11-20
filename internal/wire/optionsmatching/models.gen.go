@@ -179,8 +179,11 @@ type CancelOrderQueued struct {
 	// MessageId Identifier assigned to the queued request.
 	MessageId *string `json:"messageId,omitempty"`
 
-	// OrderId Unique identifier for the order.
-	OrderId string `json:"orderId"`
+	// OrderClientRequestId The `orderClientRequestId` the cancel named its target order by, when it did.
+	OrderClientRequestId *string `json:"orderClientRequestId,omitempty"`
+
+	// OrderId Unique identifier for the order. Absent when the cancel names the order by `orderClientRequestId`.
+	OrderId *string `json:"orderId,omitempty"`
 
 	// Queued Always `true`.
 	Queued bool `json:"queued"`
@@ -199,8 +202,11 @@ type CancelTarget struct {
 	// Contract Contract name. Example value: `BTC-7FEB26-100000-C`.
 	Contract string `json:"contract"`
 
-	// OrderId Target order identifier.
-	OrderId string `json:"orderId"`
+	// OrderClientRequestId The target order's `createRequestId` or `clientRequestId`. Use it only when the `orderId` is unknown, for example after a lost create response. Send exactly one of `orderId` and `orderClientRequestId`.
+	OrderClientRequestId *string `json:"orderClientRequestId,omitempty"`
+
+	// OrderId Target order identifier. Send exactly one of `orderId` and `orderClientRequestId`.
+	OrderId *string `json:"orderId,omitempty"`
 }
 
 // CreateOrderPayload defines model for CreateOrderPayload.
@@ -210,9 +216,6 @@ type CreateOrderPayload struct {
 
 	// MaxSlippage Market-only; `0 - 1` inclusive. Defaults to `0.1`. `0` acts as IOC.
 	MaxSlippage *string `json:"maxSlippage,omitempty"`
-
-	// OrderId Unique identifier for the order. Generated if omitted.
-	OrderId *string `json:"orderId,omitempty"`
 
 	// OrderType Order side.
 	OrderType CreateOrderPayloadOrderType `json:"orderType"`
@@ -342,8 +345,14 @@ type OpenOrder struct {
 	// AvgFillPrice Volume-weighted average fill price; `0` while nothing has filled.
 	AvgFillPrice string `json:"avgFillPrice"`
 
+	// ClientRequestId `clientRequestId` of the latest request on the order, such as its create, modify or cancel request.
+	ClientRequestId *string `json:"clientRequestId,omitempty"`
+
 	// Contract Contract name.
 	Contract string `json:"contract"`
+
+	// CreateRequestId `clientRequestId` of the request that created the order. It never changes. Omitted when the order was created without one, such as a liquidation order.
+	CreateRequestId *string `json:"createRequestId,omitempty"`
 
 	// CreatedAt Order creation timestamp (milliseconds since epoch).
 	CreatedAt int64 `json:"createdAt"`

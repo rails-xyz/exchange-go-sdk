@@ -314,8 +314,14 @@ type RecentOrder struct {
 	// AvgFillPrice Volume-weighted average fill price; `0` while nothing has filled.
 	AvgFillPrice *string `json:"avgFillPrice,omitempty"`
 
+	// ClientRequestId `clientRequestId` of the latest request on the order, such as its create, modify or cancel request.
+	ClientRequestId *string `json:"clientRequestId,omitempty"`
+
 	// Contract Contract name.
 	Contract *string `json:"contract,omitempty"`
+
+	// CreateRequestId `clientRequestId` of the request that created the order. It never changes. Omitted when the order was created without one, such as a liquidation order.
+	CreateRequestId *string `json:"createRequestId,omitempty"`
 
 	// CreatedAt Creation time (ms since epoch).
 	CreatedAt *int64 `json:"createdAt,omitempty"`

@@ -1,7 +1,7 @@
 // Command options-orders places a post-only bid, modifies it and cancels it, then places two more
-// bids and sweeps the contract with a cancel-all whose cancels arrive as events. Every order goes
-// out under an order id of the program's own, so one whose outcome is unknown can still be
-// cancelled when the program stops. Orders are paced to the budget of the account's type.
+// bids and sweeps the contract with a cancel-all whose cancels arrive as events. Every create goes
+// out under a clientRequestId of the program's own, so an order whose create went unanswered can
+// still be cancelled when the program stops. Orders are paced to the budget of the account's type.
 //
 // Set RAILS_API_KEY and RAILS_API_SECRET:
 //
@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/google/uuid"
 	"github.com/rails-xyz/exchange-go-sdk/options"
 	"github.com/rails-xyz/exchange-go-sdk/rails"
 )
@@ -64,11 +64,15 @@ func run() error {
 	}
 	defer conn.Close()
 
-	// Orders that may be on the book, cancelled if the program stops before it is done.
-	live := map[string]bool{}
+	// Orders that may be on the book, cancelled if the program stops before it is done: by
+	// OrderID, or by the ClientRequestID of a create that went unanswered.
+	live, unanswered := map[string]bool{}, map[string]bool{}
 	defer func() {
 		for orderID := range live {
-			cancelLeftover(conn, contract, orderID)
+			cancelLeftover(conn, options.CancelOrderRequest{Contract: contract, OrderID: orderID})
+		}
+		for crid := range unanswered {
+			cancelLeftover(conn, options.CancelOrderRequest{Contract: contract, OrderClientRequestID: crid})
 		}
 	}()
 
@@ -82,7 +86,7 @@ func run() error {
 	}
 
 	// Each command blocks until the exchange answers it.
-	created, err := place(ctx, conn, bid, live)
+	created, err := place(ctx, conn, bid, live, unanswered)
 	if err != nil {
 		return reconcile(client, err)
 	}
@@ -118,7 +122,7 @@ func run() error {
 	}
 
 	for range 2 {
-		created, err := place(ctx, conn, bid, live)
+		created, err := place(ctx, conn, bid, live, unanswered)
 		if err != nil {
 			return reconcile(client, err)
 		}
@@ -181,42 +185,42 @@ func run() error {
 	return nil
 }
 
-// place sends a bid under an order id of its own, tracked in live from before it goes out, so
-// a create whose outcome is unknown is still cancelled on exit. A refusal, or a command that
-// never left, placed nothing.
+// place sends a bid under a clientRequestId of its own and tracks the order in live by its
+// OrderID, or in unanswered by that clientRequestId when the create's outcome is unknown, so it
+// is still cancelled on exit. A refusal, or a command that never left, placed nothing.
 func place(
 	ctx context.Context,
 	conn *options.Conn,
 	bid options.CreateOrderRequest,
-	live map[string]bool,
+	live, unanswered map[string]bool,
 ) (*options.OrderResult, error) {
-	bid.OrderID = ulid.Make().String()
-	live[bid.OrderID] = true
+	bid.ClientRequestID = uuid.NewString()
 	created, err := conn.CreateOrder(ctx, bid)
 	if err != nil {
-		if !outcomeUnknown(err) {
-			delete(live, bid.OrderID)
+		if outcomeUnknown(err) {
+			unanswered[bid.ClientRequestID] = true
 		}
 		return nil, err
 	}
+	live[created.Order.OrderID] = true
 	return created, nil
 }
 
 // reconcile says what a create's failure means for the order. One that got no answer may still
-// have been applied, so the order is looked up by the id it went out under.
+// have been applied, so the order is looked up by the clientRequestId it went out under.
 func reconcile(client *options.Client, err error) error {
 	var apiErr *rails.Error
-	if !outcomeUnknown(err) || !errors.As(err, &apiErr) || apiErr.OrderID == "" {
+	if !outcomeUnknown(err) || !errors.As(err, &apiErr) || apiErr.ClientRequestID == "" {
 		return describe(err)
 	}
 	// The command's own context may be what ran out, so the lookup gets a fresh one.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	status, lookupErr := client.OrderStatus(ctx, apiErr.OrderID)
+	status, lookupErr := client.OrderStatusByClientRequestID(ctx, apiErr.ClientRequestID)
 	if lookupErr != nil {
-		return fmt.Errorf("%w; looking order %s up: %w", err, apiErr.OrderID, lookupErr)
+		return fmt.Errorf("%w; looking the order up: %w", err, lookupErr)
 	}
-	return fmt.Errorf("%w; order %s is %s", err, apiErr.OrderID, status.Status)
+	return fmt.Errorf("%w; order %s is %s", err, status.OrderID, status.Status)
 }
 
 // outcomeUnknown reports whether a failed command may still have been applied.
@@ -247,19 +251,16 @@ func describe(err error) error {
 
 // cancelLeftover cancels an order the program placed and could not finish with. The cancel goes
 // over HTTP when the connection cannot carry it, and is then only queued.
-func cancelLeftover(conn *options.Conn, contract, orderID string) {
+func cancelLeftover(conn *options.Conn, req options.CancelOrderRequest) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	cancelled, err := conn.CancelOrder(ctx, options.CancelOrderRequest{
-		Contract: contract,
-		OrderID:  orderID,
-	})
+	order := req.OrderID + req.OrderClientRequestID // exactly one is set
+	cancelled, err := conn.CancelOrder(ctx, req)
 	switch {
 	case err != nil:
-		fmt.Fprintf(os.Stderr, "cancelling %s: %v\n", orderID, err)
+		fmt.Fprintf(os.Stderr, "cancelling %s: %v\n", order, err)
 	case cancelled.ViaHTTP:
-		fmt.Fprintf(os.Stderr, "cancel of %s queued over HTTP; check OpenOrders\n",
-			orderID)
+		fmt.Fprintf(os.Stderr, "cancel of %s queued over HTTP; check OpenOrders\n", order)
 	}
 }
 

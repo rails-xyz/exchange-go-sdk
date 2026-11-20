@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/oklog/ulid/v2"
 	"github.com/rails-xyz/exchange-go-sdk/internal/ws"
 	"github.com/rails-xyz/exchange-go-sdk/rails"
 )
@@ -21,8 +19,8 @@ const (
 	opCancelOrder     = "cancelOrder"
 	opCancelAllOrders = "cancelAllOrders"
 
-	// cancelByOrderID is the only documented cancellation mode.
-	cancelByOrderID = "orderId"
+	cancelByOrderID         = "orderId"
+	cancelByClientRequestID = "clientRequestId"
 )
 
 // OrderResult is how the exchange answered an order command over the WebSocket, with the order
@@ -30,8 +28,9 @@ const (
 // without acknowledging first, as it does every cancel.
 //
 // ViaHTTP is a command the socket could not carry, sent over HTTP instead, where it is only
-// queued: Order holds just its OrderID and Contract, AckAt and TerminalAt are zero, and the
-// outcome arrives on the orders stream as for a command another connection sent.
+// queued: Order holds just its Contract, OrderID, ClientRequestID and CreateRequestID as far as
+// the request knows them, AckAt and TerminalAt are zero, and the outcome arrives on the orders
+// stream as for a command another connection sent.
 type OrderResult struct {
 	_ struct{}
 
@@ -60,15 +59,14 @@ type CancelAllResult struct {
 
 // httpOrders is the HTTP side of the order commands, for those a [Conn] cannot send.
 type httpOrders interface {
-	createOrder(ctx context.Context, req CreateOrderRequest, crid, orderID string) (Queued, error)
+	createOrder(ctx context.Context, req CreateOrderRequest, crid string) (Queued, error)
 	cancelOrder(ctx context.Context, req CancelOrderRequest, crid string) (Queued, error)
 	cancelAllOrders(ctx context.Context, req CancelAllOrdersRequest) (*QueuedCancelAll, error)
 }
 
 // CreateOrderRequest places an order on a contract. MaxSlippage applies to a market order only:
 // a fraction from 0 to 1 bounding how far past Price it fills, the rest being cancelled, so 0
-// fills only at Price or better; the exchange defaults it. OrderID is an optional ULID of your
-// own for the order and ClientRequestID one for the request; each is minted when empty.
+// fills only at Price or better; the exchange defaults it. ClientRequestID is minted when empty.
 type CreateOrderRequest struct {
 	_ struct{}
 
@@ -80,7 +78,6 @@ type CreateOrderRequest struct {
 	PostOnly        bool
 	ReduceOnly      bool
 	MaxSlippage     string
-	OrderID         string
 	ClientRequestID string
 }
 
@@ -96,13 +93,23 @@ type ModifyOrderRequest struct {
 	ClientRequestID string
 }
 
-// CancelOrderRequest cancels one order. ClientRequestID is minted when empty.
+// CancelOrderRequest cancels one order, named by exactly one of OrderID and
+// OrderClientRequestID, which is the order's CreateRequestID or ClientRequestID. ClientRequestID
+// is this request's own, minted when empty.
 type CancelOrderRequest struct {
 	_ struct{}
 
-	Contract        string
-	OrderID         string
-	ClientRequestID string
+	Contract             string
+	OrderID              string
+	OrderClientRequestID string
+	ClientRequestID      string
+}
+
+func (r CancelOrderRequest) validate(op string) error {
+	if (r.OrderID == "") == (r.OrderClientRequestID == "") {
+		return fmt.Errorf("%s: exactly one of order id and order client request id is required", op)
+	}
+	return nil
 }
 
 // CreateOrder places an order and waits for the exchange's answer: the order resting, filled on
@@ -111,10 +118,10 @@ type CancelOrderRequest struct {
 // draws on [ClassOrderReduceOnly] rather than [ClassOrderCreate].
 //
 // The order may be live when this returns [rails.ErrTimeout] or [rails.ErrConnClosed], or a 502
-// or 504 after it went over HTTP, and the SDK never resends. Look for the OrderID the [*rails.Error] carries in [Client.OpenOrders] and
-// both [Client.RecentOrders] histories, since it may already have filled or been cancelled,
-// before placing it again. [ErrNotSubscribed], [ErrOutOfScope], [rails.ErrNotSent] or a bare
-// [context] error mean it never left.
+// or 504 after it went over HTTP, and the SDK never resends. Look it up by the ClientRequestID
+// the [*rails.Error] carries with [Client.OrderStatusByClientRequestID], or cancel it with
+// [CancelOrderRequest.OrderClientRequestID], before placing it again. [ErrNotSubscribed],
+// [ErrOutOfScope], [rails.ErrNotSent] or a bare [context] error mean it never left.
 //
 // A ReduceOnly create, which closes a position, goes over HTTP when the socket is down
 // ([OrderResult.ViaHTTP]).
@@ -123,10 +130,6 @@ func (c *Conn) CreateOrder(ctx context.Context, req CreateOrderRequest) (*OrderR
 		return nil, err
 	}
 	crid := clientRequestID(req.ClientRequestID)
-	orderID := req.OrderID
-	if orderID == "" {
-		orderID = ulid.Make().String()
-	}
 	reply, err := c.send(ctx, createClass(req.ReduceOnly), ws.Send{
 		Message:         opCreateOrder,
 		ClientRequestID: crid,
@@ -134,7 +137,6 @@ func (c *Conn) CreateOrder(ctx context.Context, req CreateOrderRequest) (*OrderR
 		Market:          req.Contract,
 		Content: createOrderContent{
 			ClientRequestID: crid,
-			OrderID:         orderID,
 			Market:          req.Contract,
 			Price:           req.Price,
 			Quantity:        req.Quantity,
@@ -148,18 +150,15 @@ func (c *Conn) CreateOrder(ctx context.Context, req CreateOrderRequest) (*OrderR
 	if err == nil {
 		return orderResult(crid, reply)
 	}
-	if errors.Is(err, rails.ErrTimeout) || errors.Is(err, rails.ErrConnClosed) {
-		return nil, withOrderID(err, orderID)
-	}
 	// Only a create that never left goes over HTTP: one that may have could close twice.
 	if !req.ReduceOnly || !ws.IsDown(err) || ctx.Err() != nil {
 		return nil, err
 	}
-	queued, httpErr := c.overHTTP.createOrder(ctx, req, crid, orderID)
+	queued, httpErr := c.overHTTP.createOrder(ctx, req, crid)
 	if httpErr != nil {
-		return nil, c.fallbackError(createClass(req.ReduceOnly), err, createOutcome(httpErr, crid, orderID))
+		return nil, c.fallbackError(createClass(req.ReduceOnly), err, createOutcome(httpErr, crid))
 	}
-	return queuedResult(queued, crid), nil
+	return queuedResult(queued, crid, crid), nil
 }
 
 // ModifyOrder changes a resting order's price and quantity in place, keeping its OrderID, and
@@ -193,12 +192,19 @@ func (c *Conn) ModifyOrder(ctx context.Context, req ModifyOrderRequest) (*OrderR
 // CancelOrder cancels an order and waits for the exchange's answer, which comes without an
 // acknowledgement. An order already gone is refused with [CodeOrderNotFound].
 //
-// Cancelling is idempotent by order id, so a cancel the socket could not carry, or lost the
-// answer to with [rails.ErrConnClosed], goes over HTTP instead ([OrderResult.ViaHTTP]), under a
-// fresh ClientRequestID when the first one may have reached the exchange.
+// Cancelling is idempotent, so a cancel the socket could not carry, or lost the answer to with
+// [rails.ErrConnClosed], goes over HTTP instead ([OrderResult.ViaHTTP]), under a fresh
+// ClientRequestID when the first one may have reached the exchange.
 func (c *Conn) CancelOrder(ctx context.Context, req CancelOrderRequest) (*OrderResult, error) {
 	if err := c.guardContract(opCancelOrder, req.Contract); err != nil {
 		return nil, err
+	}
+	if err := req.validate(opCancelOrder); err != nil {
+		return nil, err
+	}
+	cancelBy := cancelByOrderID
+	if req.OrderClientRequestID != "" {
+		cancelBy = cancelByClientRequestID
 	}
 	crid := clientRequestID(req.ClientRequestID)
 	reply, err := c.send(ctx, ClassOrderCancel, ws.Send{
@@ -206,10 +212,11 @@ func (c *Conn) CancelOrder(ctx context.Context, req CancelOrderRequest) (*OrderR
 		ClientRequestID: crid,
 		Market:          req.Contract,
 		Content: cancelOrderContent{
-			ClientRequestID: crid,
-			Market:          req.Contract,
-			OrderID:         req.OrderID,
-			CancelBy:        cancelByOrderID,
+			ClientRequestID:      crid,
+			Market:               req.Contract,
+			OrderID:              req.OrderID,
+			OrderClientRequestID: req.OrderClientRequestID,
+			CancelBy:             cancelBy,
 		},
 	})
 	if err == nil {
@@ -223,7 +230,7 @@ func (c *Conn) CancelOrder(ctx context.Context, req CancelOrderRequest) (*OrderR
 	if httpErr != nil {
 		return nil, c.fallbackError(ClassOrderCancel, err, httpErr)
 	}
-	return queuedResult(queued, crid), nil
+	return queuedResult(queued, crid, ""), nil
 }
 
 // CancelAllOrders cancels every resting order on req.Contract, or on every contract of the
@@ -275,7 +282,6 @@ func (c *Conn) CancelAllOrders(ctx context.Context, req CancelAllOrdersRequest) 
 
 type createOrderContent struct {
 	ClientRequestID string `json:"clientRequestId"`
-	OrderID         string `json:"orderId"`
 	Market          string `json:"market"`
 	Price           string `json:"price"`
 	Quantity        string `json:"quantity"`
@@ -295,10 +301,11 @@ type modifyOrderContent struct {
 }
 
 type cancelOrderContent struct {
-	ClientRequestID string `json:"clientRequestId"`
-	Market          string `json:"market"`
-	OrderID         string `json:"orderId"`
-	CancelBy        string `json:"cancelBy"`
+	ClientRequestID      string `json:"clientRequestId"`
+	Market               string `json:"market"`
+	OrderID              string `json:"orderId,omitempty"`
+	OrderClientRequestID string `json:"orderClientRequestId,omitempty"`
+	CancelBy             string `json:"cancelBy"`
 }
 
 // Market is omitted when empty, so the exchange sweeps the connection's scope.
@@ -345,49 +352,25 @@ func (c *Conn) fallbackError(class rails.OpClass, wsErr, httpErr error) error {
 }
 
 // createOutcome is an HTTP create's failure as the caller reconciles it: a refusal as the
-// exchange gave it, and anything that may have been queued with the order to look up.
-func createOutcome(err error, crid, orderID string) error {
+// exchange gave it, and a request that may have been queued as [rails.ErrConnClosed].
+func createOutcome(err error, crid string) error {
 	var apiErr *rails.Error
 	if errors.As(err, &apiErr) && apiErr.StatusCode != 0 {
-		if apiErr.StatusCode == http.StatusBadGateway || apiErr.StatusCode == http.StatusGatewayTimeout {
-			return withOrderID(err, orderID)
-		}
 		return err
 	}
 	return fmt.Errorf("%w: %w", rails.ErrConnClosed, &rails.Error{
 		Op:              "POST /v1/matching/orders/create",
 		Message:         err.Error(),
 		ClientRequestID: crid,
-		OrderID:         orderID,
 	})
 }
 
-// withOrderID names the order on a copy of err's [*rails.Error]: hooks may still be reading the
-// original.
-func withOrderID(err error, orderID string) error {
-	var apiErr *rails.Error
-	if !errors.As(err, &apiErr) {
-		return err
-	}
-	named := *apiErr
-	named.OrderID = orderID
-	return orderIDError{err: err, named: &named}
-}
-
-// orderIDError is err with its [*rails.Error] replaced by named for [errors.As], and its
-// sentinels kept for [errors.Is].
-type orderIDError struct {
-	err   error
-	named *rails.Error
-}
-
-func (e orderIDError) Error() string   { return e.err.Error() }
-func (e orderIDError) Unwrap() []error { return []error{e.named, e.err} }
-
-func queuedResult(q Queued, crid string) *OrderResult {
+// queuedResult's createCrid is the order's CreateRequestID, empty when the request does not know
+// it.
+func queuedResult(q Queued, crid, createCrid string) *OrderResult {
 	return &OrderResult{
 		ClientRequestID: crid,
-		Order:           Order{Contract: q.Contract, OrderID: q.OrderID, ClientRequestID: crid},
+		Order:           Order{Contract: q.Contract, OrderID: q.OrderID, ClientRequestID: crid, CreateRequestID: createCrid},
 		ViaHTTP:         true,
 	}
 }
