@@ -188,10 +188,26 @@ func (c *Client) OrderStatus(ctx context.Context, orderID string) (*OrderStatus,
 	return orderStatusResponseToStatus(resp), nil
 }
 
+// OrderStatusByClientRequestID is [Client.OrderStatus] for an order whose OrderID you do not
+// have, by the ClientRequestID of a request you sent for it.
+func (c *Client) OrderStatusByClientRequestID(ctx context.Context, clientRequestID string) (*OrderStatus, error) {
+	const op = "GET /v1/matching/orders/by-client-request-id/{clientRequestId}"
+
+	if clientRequestID == "" {
+		return nil, fmt.Errorf("%s: client request id is required", op)
+	}
+	path := "/v1/matching/orders/by-client-request-id/" + url.PathEscape(clientRequestID)
+	var resp optionsmatching.OrderStatus
+	if err := c.http.Get(ctx, op, ClassReadOrders, c.cfg.Environment.OptionsURL, path, nil, &resp); err != nil {
+		return nil, err
+	}
+	return orderStatusResponseToStatus(resp), nil
+}
+
 // createOrder, cancelOrder and cancelAllOrders carry a [Conn] command its socket could not,
-// with the ids it chose, so the outcome on the order stream answers to them. They are unpaced:
-// the command was paced before it reached the socket.
-func (c *Client) createOrder(ctx context.Context, req CreateOrderRequest, crid, orderID string) (Queued, error) {
+// with the clientRequestId it chose, so the outcome on the order stream answers to it. They are
+// unpaced: the command was paced before it reached the socket.
+func (c *Client) createOrder(ctx context.Context, req CreateOrderRequest, crid string) (Queued, error) {
 	const op = "POST /v1/matching/orders/create"
 
 	body := optionsmatching.CreateOptionsOrderJSONRequestBody{
@@ -205,14 +221,13 @@ func (c *Client) createOrder(ctx context.Context, req CreateOrderRequest, crid, 
 			PostOnly:    &req.PostOnly,
 			ReduceOnly:  &req.ReduceOnly,
 			MaxSlippage: optional(req.MaxSlippage),
-			OrderId:     &orderID,
 		},
 	}
 	var resp optionsmatching.CreateOrderQueued
 	if err := c.http.Post(ctx, op, "", c.cfg.Environment.OptionsURL, "/v1/matching/orders/create", body, &resp); err != nil {
 		return Queued{}, withClientRequestID(err, crid)
 	}
-	return queuedResponseToQueued(optionsmatching.CancelOrderQueued(resp)), nil
+	return createOrderQueuedToQueued(resp), nil
 }
 
 func (c *Client) cancelOrder(ctx context.Context, req CancelOrderRequest, crid string) (Queued, error) {
@@ -220,13 +235,17 @@ func (c *Client) cancelOrder(ctx context.Context, req CancelOrderRequest, crid s
 
 	body := optionsmatching.CancelOptionsOrderJSONRequestBody{
 		ClientRequestId: &crid,
-		Cancel:          optionsmatching.CancelTarget{Contract: req.Contract, OrderId: req.OrderID},
+		Cancel: optionsmatching.CancelTarget{
+			Contract:             req.Contract,
+			OrderId:              optional(req.OrderID),
+			OrderClientRequestId: optional(req.OrderClientRequestID),
+		},
 	}
 	var resp optionsmatching.CancelOrderQueued
 	if err := c.http.Post(ctx, op, "", c.cfg.Environment.OptionsURL, "/v1/matching/orders/cancel", body, &resp); err != nil {
 		return Queued{}, withClientRequestID(err, crid)
 	}
-	return queuedResponseToQueued(resp), nil
+	return cancelOrderQueuedToQueued(resp), nil
 }
 
 // CancelAllOrdersRequest cancels every open order on one contract, or when Contract is empty on

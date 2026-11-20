@@ -85,7 +85,8 @@ The HTTP operations on `client`:
 - Contracts: `Expirations` (the expiry dates of a market such as `BTC-USDT`), `Contracts` (every
   contract of one expiry, with its prices, implied volatility and greeks).
 - Account: `AccountSummary`, `Positions`, `Deposits`, `Withdrawals`.
-- Orders: `OpenOrders`, `RecentOrders` (completed or cancelled), `OrderStatus`.
+- Orders: `OpenOrders`, `RecentOrders` (completed or cancelled), `OrderStatus`, and
+  `OrderStatusByClientRequestID` for an order whose `OrderID` you do not have.
 - Cancel all: `CancelAllOrders`, which needs no WebSocket connection.
 
 Contracts are named in full, such as `BTC-7FEB26-100000-C`: underlying, expiry, strike, and `C`
@@ -123,9 +124,10 @@ the exchange answers:
 
 - `CreateOrder` and `ModifyOrder` return an `*options.OrderResult` once the order rests, fills on
   arrival or is refused. A `200` is not always resting: read `Order.Status`, since a market order
-  that finds no liquidity is answered with the order `cancelled`. A create takes an `OrderID` of
-  your own, a ULID, and mints one when it has none; a modify keeps the order's `OrderID`.
-- `CancelOrder` is answered without an acknowledgement, so `OrderResult.AckAt` is zero. An order
+  that finds no liquidity is answered with the order `cancelled`. A modify keeps the order's
+  `OrderID`.
+- `CancelOrder` is answered without an acknowledgement, so `OrderResult.AckAt` is zero. It names
+  the order by `OrderID`, or by `OrderClientRequestID` when the `OrderID` is unknown. An order
   already gone is refused with `options.CodeOrderNotFound`.
 - `CancelAllOrders` sweeps one contract, or every contract of the connection's scope when
   `Contract` is empty, and returns an `*options.CancelAllResult` as soon as the exchange takes the
@@ -140,17 +142,17 @@ anything is sent: `options.ErrNotSubscribed` without the orders stream, `options
 for a contract outside every scope it is held for.
 
 A create or modify is never resent. After `rails.ErrTimeout` or `rails.ErrConnClosed` it may
-still have been applied; the error carries the `ClientRequestID`, and for a create the
-`OrderID`. Before placing it again, look for that order in `client.OpenOrders` and in both
-`client.RecentOrders` histories, since it may already have filled or been cancelled.
+still have been applied; the error carries the `ClientRequestID`. Before placing it again, look
+the order up with `client.OrderStatusByClientRequestID`, or cancel it with a `CancelOrder` that
+names it by `OrderClientRequestID`.
 
 ### When the socket is down
 
 Cancelling and closing positions go over HTTP when the connection cannot carry them:
 
 - `CancelOrder` and `CancelAllOrders`, when the socket is down or dropped before the answer
-  came. A cancel is idempotent by order id, so one that may have reached the exchange is sent
-  again under a fresh `ClientRequestID`. `CancelAllOrders` without a `Contract` goes over HTTP
+  came. A cancel is idempotent, so one that may have reached the exchange is sent again under a
+  fresh `ClientRequestID`. `CancelAllOrders` without a `Contract` goes over HTTP
   only on a `ScopeAll()` connection, since there it sweeps every contract of the account.
 - A `CreateOrder` with `ReduceOnly`, when the socket is down. One that may have reached the
   exchange is never resent, as it could close the position twice.

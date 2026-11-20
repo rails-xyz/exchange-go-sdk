@@ -418,7 +418,7 @@ operations:
     action: receive
     channel:
       $ref: '#/channels/orderManagementStream'
-    summary: Cancel an order by ID.
+    summary: Cancel an order by `orderId` or `clientRequestId`.
     messages:
       - $ref: '#/channels/orderManagementStream/messages/cancelOrderRequest'
   cancelOrderResult:
@@ -756,7 +756,7 @@ components:
           description: Last update time (ms since epoch)
         clientRequestId:
           type: string
-          description: Client-generated UUID for correlation
+          description: Client-generated UUID of the create or modify request that last shaped the order
       required:
         - contract
         - orderId
@@ -1086,6 +1086,9 @@ components:
         orderId:
           type: string
           description: Order identifier
+        clientRequestId:
+          type: string
+          description: Client-generated UUID of the create or modify request that last shaped the order
         contract:
           type: string
           description: Contract name
@@ -1162,6 +1165,9 @@ components:
         orderId:
           type: string
           description: Order identifier
+        clientRequestId:
+          type: string
+          description: Client-generated UUID of the create or modify request that last shaped the order
         contract:
           type: string
           description: Contract name
@@ -1712,9 +1718,6 @@ components:
               maxSlippage:
                 type: string
                 description: Market orders only; `0 - 1` inclusive. `0` behaves as IOC
-              orderId:
-                type: string
-                description: Unique identifier for the order, a ULID. Generated if omitted.
             required: [price, quantity, orderType, tradeType]
         required: [message, content]
       examples:
@@ -1723,7 +1726,6 @@ components:
             message: createOrder
             content:
               clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
-              orderId: 01M3STNFPN53F1JWX1B7R023WV
               market: BTC-3JUL26-55000-C
               price: "6400"
               quantity: "1"
@@ -2110,22 +2112,53 @@ components:
               market:
                 type: string
                 description: Contract name; required unless the connection is scoped to one contract
-              orderId:
-                type: string
-                description: Target order identifier
               cancelBy:
                 type: string
-                description: Cancellation mode; currently `orderId`
-            required: [orderId, cancelBy]
+                enum: [orderId, clientRequestId]
+                description: >-
+                  How the target order is named: `orderId`, or `clientRequestId` when the `orderId`
+                  is unknown, for example after a lost create response
+              orderId:
+                type: string
+                description: Target order identifier. Required when `cancelBy` is `orderId`
+              orderClientRequestId:
+                type: string
+                format: uuid
+                description: >-
+                  The `clientRequestId` of the create or modify request that last shaped the target
+                  order. Required when `cancelBy` is `clientRequestId`
+            required: [cancelBy]
+            allOf:
+              - if:
+                  properties:
+                    cancelBy:
+                      const: orderId
+                then:
+                  required: [orderId]
+              - if:
+                  properties:
+                    cancelBy:
+                      const: clientRequestId
+                then:
+                  required: [orderClientRequestId]
         required: [message, content]
       examples:
-        - payload:
+        - name: ByOrderId
+          payload:
             message: cancelOrder
             content:
               clientRequestId: b56692f8-4322-411d-846f-268c01cd4fa9
               market: BTC-3JUL26-55000-C
               cancelBy: orderId
               orderId: 01KWK47RT6A4DD1TCQE662QJ3W
+        - name: ByClientRequestId
+          payload:
+            message: cancelOrder
+            content:
+              clientRequestId: 7a4e1c92-5b3d-4f8a-a6e0-2d9c8b1f3e57
+              market: BTC-3JUL26-55000-C
+              cancelBy: clientRequestId
+              orderClientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
 
     CancelOrderConfirmation:
       name: cancelOrderConfirmation
@@ -2176,7 +2209,7 @@ components:
                 postOnly: false
                 createdAt: 1783053411143
                 updatedAt: 1783053687411
-                clientRequestId: b56692f8-4322-411d-846f-268c01cd4fa9
+                clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
               clientRequestId: b56692f8-4322-411d-846f-268c01cd4fa9
 
     CancelOrderError:
@@ -3149,25 +3182,25 @@ components:
               clientRequestId: f45cf3c8-3f2d-4ace-80de-8cb4da0a63bb
               trades:
                 - executionType: taker
-                  matchId: 9b8e7bc6-c111-46e7-81f2-04691780c1fd-1
+                  matchId: 3f9c2a7be1d04c6a8b5e0f1d2c3b4a59-1
                   price: "7204.26"
                   quantity: "1"
                   side: sell
                   updatedAt: 1783352484840
                 - executionType: maker
-                  matchId: 9b8e7bc6-c111-46e7-81f2-04691780c1fd-1
+                  matchId: 3f9c2a7be1d04c6a8b5e0f1d2c3b4a59-1
                   price: "7204.26"
                   quantity: "1"
                   side: buy
                   updatedAt: 1783086811956
                 - executionType: taker
-                  matchId: a9716fab-8ac2-47fd-803e-44e2ca22b948-1
+                  matchId: 8d41e07c5a2b4f9e93c6d1a0b7e25f48-f1-1
                   price: "7210.97"
                   quantity: "1"
                   side: buy
                   updatedAt: 1783339818825
                 - executionType: maker
-                  matchId: a9716fab-8ac2-47fd-803e-44e2ca22b948-1
+                  matchId: 8d41e07c5a2b4f9e93c6d1a0b7e25f48-f1-1
                   price: "7210.97"
                   quantity: "1"
                   side: sell
@@ -3206,7 +3239,7 @@ components:
             data:
               trades:
                 - executionType: taker
-                  matchId: "01KWM432SK16GA5ZV3H6TQSDRC:01KWW1ERZ59PWXTRVP2YSDA2SB"
+                  matchId: 3f9c2a7be1d04c6a8b5e0f1d2c3b4a59-1
                   price: "7204.26"
                   quantity: "1"
                   side: sell
@@ -3461,6 +3494,7 @@ components:
             data:
               orders:
                 - orderId: 01KWKXG9J8RNYDKXCWYZPBEW4C
+                  clientRequestId: 6b0d8e3f-2a71-4c59-b8e4-1f7a9c3d5e20
                   contract: BTC-10JUL26-55000-C
                   side: buy
                   type: limit
@@ -3510,6 +3544,7 @@ components:
             data:
               orders:
                 - orderId: 01KWKXG9J8RNYDKXCWYZPBEW4C
+                  clientRequestId: 6b0d8e3f-2a71-4c59-b8e4-1f7a9c3d5e20
                   contract: BTC-10JUL26-55000-C
                   side: buy
                   type: limit
@@ -3604,6 +3639,7 @@ components:
             data:
               orders:
                 - orderId: 01KWKXFHQJTQMNWPT1Y8X54HJP
+                  clientRequestId: d4f2a816-9c3e-4b07-a5d1-8e6b2f0c7a93
                   contract: BTC-10JUL26-55000-C
                   side: buy
                   type: market
@@ -3651,6 +3687,7 @@ components:
             data:
               orders:
                 - orderId: 01KWKXFHQJTQMNWPT1Y8X54HJP
+                  clientRequestId: d4f2a816-9c3e-4b07-a5d1-8e6b2f0c7a93
                   contract: BTC-10JUL26-55000-C
                   side: buy
                   type: market

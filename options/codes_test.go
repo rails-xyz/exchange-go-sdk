@@ -49,7 +49,6 @@ var knownCodes = map[rails.Code]struct{}{
 	options.CodeCreateOrderWouldMatch:          {},
 	options.CodeCreateOrderReduceOnly:          {},
 	options.CodeCreateOrderMinValue:            {},
-	options.CodeCreateOrderDuplicateOrderID:    {},
 	options.CodeCancelOrderNotOwned:            {},
 	options.CodeModifyOrderInsufficientBalance: {},
 	options.CodeModifyOrderMarginRatioExceeded: {},

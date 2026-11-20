@@ -199,14 +199,15 @@ type Position struct {
 type RecentOrder struct {
 	_ struct{}
 
-	OrderID        string
-	Contract       string
-	Side           OrderType
-	Type           TradeType
-	FillType       FillType // empty for a cancelled order
-	Price          string   // the price requested
-	Quantity       string   // the full order quantity
-	FilledQuantity string
+	OrderID         string
+	ClientRequestID string
+	Contract        string
+	Side            OrderType
+	Type            TradeType
+	FillType        FillType // empty for a cancelled order
+	Price           string   // the price requested
+	Quantity        string   // the full order quantity
+	FilledQuantity  string
 	// AvgFillPrice is "0" while nothing has filled.
 	AvgFillPrice string
 	Fees         string // USDT; empty for a cancelled order, and over the WebSocket
@@ -219,13 +220,14 @@ type RecentOrder struct {
 type OpenOrder struct {
 	_ struct{}
 
-	OrderID        string
-	Contract       string
-	Side           OrderType
-	Type           TradeType
-	Price          string
-	Quantity       string
-	FilledQuantity string
+	OrderID         string
+	ClientRequestID string
+	Contract        string
+	Side            OrderType
+	Type            TradeType
+	Price           string
+	Quantity        string
+	FilledQuantity  string
 	// AvgFillPrice is "0" while nothing has filled.
 	AvgFillPrice string
 	ReduceOnly   bool
@@ -299,10 +301,11 @@ type Withdrawal struct {
 type Queued struct {
 	_ struct{}
 
-	OrderID         string
-	ClientRequestID string
-	Contract        string
-	MessageID       string // the id the queue assigned the request
+	OrderID              string // empty for a cancel that named the order by OrderClientRequestID
+	ClientRequestID      string
+	Contract             string
+	MessageID            string // the id the queue assigned the request
+	OrderClientRequestID string
 }
 
 // QueuedCancelAll is the cancels a [Client.CancelAllOrders] queued, one per open order it

@@ -303,6 +303,7 @@
                   "orders": [
                     {
                       "orderId": "01J9G4K19776J1CTA8YXA8AA5H",
+                      "clientRequestId": "5e8b1d47-0c2a-4f96-9b3e-a7d2c6f1e804",
                       "contract": "BTC-3JUL26-62000-C",
                       "side": "buy",
                       "type": "limit",
@@ -318,6 +319,7 @@
                     },
                     {
                       "orderId": "01J9G51ABC7QK2DTB9ZYC9BB6J",
+                      "clientRequestId": "a1c93f06-7e2d-4b58-8f4a-3d6e9b0c2f71",
                       "contract": "BTC-3JUL26-60000-P",
                       "side": "sell",
                       "type": "market",
@@ -600,6 +602,7 @@
         "type": "object",
         "properties": {
           "orderId": { "type": "string", "description": "Order identifier." },
+          "clientRequestId": { "type": "string", "description": "Client-generated UUID of the create or modify request that last shaped the order." },
           "contract": { "type": "string", "description": "Contract name." },
           "side": { "type": "string", "description": "`buy` or `sell`." },
           "type": { "type": "string", "description": "Order type: `limit` or `market`." },

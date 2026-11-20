@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oklog/ulid/v2"
 	"github.com/rails-xyz/exchange-go-sdk/internal/spectest"
 	"github.com/rails-xyz/exchange-go-sdk/options"
 	"github.com/rails-xyz/exchange-go-sdk/rails"
@@ -328,17 +327,10 @@ func checkCreateOrderRequest(t *testing.T, ex spectest.Example) {
 			PostOnly:        content["postOnly"] == true,
 			ReduceOnly:      content["reduceOnly"] == true,
 			MaxSlippage:     spectest.Str(content["maxSlippage"]),
-			OrderID:         spectest.Str(content["orderId"]),
 			ClientRequestID: spectest.Str(content["clientRequestId"]),
 		})
 	}()
-	sent := spectest.Decode(t, command(t, srv, "createOrder").Content)
-	if _, given := content["orderId"]; !given {
-		_, err := ulid.ParseStrict(spectest.Str(sent["orderId"]))
-		assert.NoError(t, err, "an orderId should be minted when the request has none")
-		delete(sent, "orderId")
-	}
-	spectest.AssertSends(t, sent, content)
+	spectest.AssertSends(t, spectest.Decode(t, command(t, srv, "createOrder").Content), content)
 }
 
 func checkModifyOrderRequest(t *testing.T, ex spectest.Example) {
@@ -363,9 +355,10 @@ func checkCancelOrderRequest(t *testing.T, ex spectest.Example) {
 	conn := tradingConn(t, srv, options.ScopeAll())
 	go func() {
 		_, _ = conn.CancelOrder(t.Context(), options.CancelOrderRequest{
-			Contract:        spectest.Str(content["market"]),
-			OrderID:         spectest.Str(content["orderId"]),
-			ClientRequestID: spectest.Str(content["clientRequestId"]),
+			Contract:             spectest.Str(content["market"]),
+			OrderID:              spectest.Str(content["orderId"]),
+			OrderClientRequestID: spectest.Str(content["orderClientRequestId"]),
+			ClientRequestID:      spectest.Str(content["clientRequestId"]),
 		})
 	}()
 	spectest.AssertSends(t, spectest.Decode(t, command(t, srv, "cancelOrder").Content), content)

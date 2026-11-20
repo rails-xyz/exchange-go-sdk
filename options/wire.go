@@ -118,18 +118,19 @@ func recentOrdersResponseToPage(w optionsaccount.RecentOrders) *Page[RecentOrder
 	page := &Page[RecentOrder]{Items: make([]RecentOrder, 0, len(wire)), Next: deref(w.NextPageToken)}
 	for _, o := range wire {
 		page.Items = append(page.Items, RecentOrder{
-			OrderID:        deref(o.OrderId),
-			Contract:       deref(o.Contract),
-			Side:           OrderType(deref(o.Side)),
-			Type:           TradeType(deref(o.Type)),
-			FillType:       FillType(deref(o.FillType)),
-			Price:          deref(o.Price),
-			Quantity:       deref(o.Quantity),
-			FilledQuantity: deref(o.FilledQuantity),
-			AvgFillPrice:   deref(o.AvgFillPrice),
-			Fees:           deref(o.Fees),
-			CreatedAt:      deref(o.CreatedAt),
-			UpdatedAt:      deref(o.UpdatedAt),
+			OrderID:         deref(o.OrderId),
+			ClientRequestID: deref(o.ClientRequestId),
+			Contract:        deref(o.Contract),
+			Side:            OrderType(deref(o.Side)),
+			Type:            TradeType(deref(o.Type)),
+			FillType:        FillType(deref(o.FillType)),
+			Price:           deref(o.Price),
+			Quantity:        deref(o.Quantity),
+			FilledQuantity:  deref(o.FilledQuantity),
+			AvgFillPrice:    deref(o.AvgFillPrice),
+			Fees:            deref(o.Fees),
+			CreatedAt:       deref(o.CreatedAt),
+			UpdatedAt:       deref(o.UpdatedAt),
 		})
 	}
 	return page
@@ -168,18 +169,19 @@ func openOrdersResponseToPage(w optionsmatching.OpenOrders) *Page[OpenOrder] {
 	page := &Page[OpenOrder]{Items: make([]OpenOrder, 0, len(w.Orders)), Next: deref(w.NextPageToken)}
 	for _, o := range w.Orders {
 		page.Items = append(page.Items, OpenOrder{
-			OrderID:        o.OrderId,
-			Contract:       o.Contract,
-			Side:           OrderType(o.Side),
-			Type:           TradeType(o.Type),
-			Price:          o.Price,
-			Quantity:       o.Quantity,
-			FilledQuantity: o.FilledQuantity,
-			AvgFillPrice:   o.AvgFillPrice,
-			ReduceOnly:     o.ReduceOnly,
-			PostOnly:       o.PostOnly,
-			CreatedAt:      o.CreatedAt,
-			UpdatedAt:      o.UpdatedAt,
+			OrderID:         o.OrderId,
+			ClientRequestID: deref(o.ClientRequestId),
+			Contract:        o.Contract,
+			Side:            OrderType(o.Side),
+			Type:            TradeType(o.Type),
+			Price:           o.Price,
+			Quantity:        o.Quantity,
+			FilledQuantity:  o.FilledQuantity,
+			AvgFillPrice:    o.AvgFillPrice,
+			ReduceOnly:      o.ReduceOnly,
+			PostOnly:        o.PostOnly,
+			CreatedAt:       o.CreatedAt,
+			UpdatedAt:       o.UpdatedAt,
 		})
 	}
 	return page
@@ -201,13 +203,22 @@ func orderStatusResponseToStatus(w optionsmatching.OrderStatus) *OrderStatus {
 	}
 }
 
-// The create and modify responses have the cancel response's shape, and convert to it.
-func queuedResponseToQueued(w optionsmatching.CancelOrderQueued) Queued {
+func createOrderQueuedToQueued(w optionsmatching.CreateOrderQueued) Queued {
 	return Queued{
 		OrderID:         w.OrderId,
 		ClientRequestID: deref(w.ClientRequestId),
 		Contract:        w.Contract,
 		MessageID:       deref(w.MessageId),
+	}
+}
+
+func cancelOrderQueuedToQueued(w optionsmatching.CancelOrderQueued) Queued {
+	return Queued{
+		OrderID:              deref(w.OrderId),
+		ClientRequestID:      deref(w.ClientRequestId),
+		Contract:             w.Contract,
+		MessageID:            deref(w.MessageId),
+		OrderClientRequestID: deref(w.OrderClientRequestId),
 	}
 }
 
@@ -219,7 +230,7 @@ func cancelAllResponseToQueued(w optionsmatching.CancelAllOrdersQueued) *QueuedC
 		Cancels:         make([]Queued, 0, len(w.Cancels)),
 	}
 	for _, c := range w.Cancels {
-		out.Cancels = append(out.Cancels, queuedResponseToQueued(c))
+		out.Cancels = append(out.Cancels, cancelOrderQueuedToQueued(c))
 	}
 	for _, u := range derefSlice(w.Unqueued) {
 		out.Unqueued = append(out.Unqueued, UnqueuedCancel{OrderID: u.OrderId, Contract: u.Contract})

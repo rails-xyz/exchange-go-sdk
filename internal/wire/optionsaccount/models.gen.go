@@ -314,6 +314,9 @@ type RecentOrder struct {
 	// AvgFillPrice Volume-weighted average fill price; `0` while nothing has filled.
 	AvgFillPrice *string `json:"avgFillPrice,omitempty"`
 
+	// ClientRequestId Client-generated UUID of the create or modify request that last shaped the order.
+	ClientRequestId *string `json:"clientRequestId,omitempty"`
+
 	// Contract Contract name.
 	Contract *string `json:"contract,omitempty"`
 
