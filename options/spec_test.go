@@ -165,6 +165,7 @@ func checkFill(t *testing.T, ex spectest.Example) {
 
 	event := spectest.EventAs[options.OrderFilled](t, options.ToEvent, frame)
 	assert.Equal(t, options.OrderFromWire(data.Order, frame.Market), event.Order)
+	assert.Equal(t, data.Order.CreateRequestID, event.Order.CreateRequestID)
 	assert.Equal(t, frame.ResultType == "partialFillOrder", event.Partial)
 	assert.NotEmpty(t, event.Order.OrderID)
 }
@@ -177,6 +178,7 @@ func checkCancelled(t *testing.T, ex spectest.Example) {
 
 	event := spectest.EventAs[options.OrderCancelled](t, options.ToEvent, frame)
 	assert.Equal(t, options.OrderFromWire(data.Order, frame.Market), event.Order)
+	assert.Equal(t, data.Order.CreateRequestID, event.Order.CreateRequestID)
 	assert.Equal(t, data.ClientRequestID, event.ClientRequestID)
 	assert.Equal(t, options.StatusCancelled, event.Order.Status)
 }
@@ -237,6 +239,7 @@ func checkCommandFlow(t *testing.T, op string, acks, confirmations []spectest.Ex
 	assert.Equal(t, crid, result.ClientRequestID)
 	assert.False(t, result.AckAt.IsZero(), "the acknowledgement went unrecorded")
 	assert.Equal(t, options.OrderFromWire(confirmed.Order, confirmation.Market), result.Order)
+	assert.Equal(t, confirmed.Order.CreateRequestID, result.Order.CreateRequestID)
 }
 
 func checkCancelAllAck(t *testing.T, ex spectest.Example) {

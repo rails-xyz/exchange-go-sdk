@@ -379,6 +379,7 @@
                     {
                       "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ",
                       "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
+                      "createRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
                       "contract": "BTC-7FEB26-100000-C",
                       "side": "buy",
                       "type": "limit",
@@ -522,7 +523,7 @@
       "get": {
         "summary": "Get Order Status by Client Request ID",
         "operationId": "getOptionsOrderStatusByClientRequestId",
-        "description": "Returns the current state of one of your orders by the `clientRequestId` of a create, modify or cancel request you sent for it. Use it only when the `orderId` is unknown, for example after a lost create response; the lookup covers about an hour after the order's last change. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
+        "description": "Returns the current state of one of your orders by the `clientRequestId` of a create, modify or cancel request you sent for it. Use it only when the `orderId` is unknown, for example after a lost create response; the lookup covers about an hour after the order's last change. A cancel by `clientRequestId` that matched no order is found by its own `clientRequestId`, with status `not_found`. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
         "parameters": [
           {
             "name": "clientRequestId",
@@ -933,7 +934,7 @@
             "type": "string",
             "format": "uuid",
             "x-go-type": "string",
-            "description": "The `clientRequestId` of the create or modify request that last shaped the target order. Use it only when the `orderId` is unknown, for example after a lost create response. Send exactly one of `orderId` and `orderClientRequestId`."
+            "description": "The target order's `createRequestId` or `clientRequestId`. Use it only when the `orderId` is unknown, for example after a lost create response. Send exactly one of `orderId` and `orderClientRequestId`."
           },
           "contract": {
             "type": "string",
@@ -1069,7 +1070,7 @@
           },
           "orderClientRequestId": {
             "type": "string",
-            "description": "The target order's `clientRequestId`, when the cancel names the order by it."
+            "description": "The `orderClientRequestId` the cancel named its target order by, when it did."
           }
         },
         "required": [
@@ -1250,7 +1251,11 @@
           },
           "clientRequestId": {
             "type": "string",
-            "description": "Client-generated UUID of the create or modify request that last shaped the order."
+            "description": "`clientRequestId` of the latest request on the order, such as its create, modify or cancel request."
+          },
+          "createRequestId": {
+            "type": "string",
+            "description": "`clientRequestId` of the request that created the order. It never changes. Omitted when the order was created without one, such as a liquidation order."
           },
           "contract": {
             "type": "string",

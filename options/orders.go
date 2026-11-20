@@ -28,9 +28,9 @@ const (
 // without acknowledging first, as it does every cancel.
 //
 // ViaHTTP is a command the socket could not carry, sent over HTTP instead, where it is only
-// queued: Order holds just its Contract, OrderID and ClientRequestID as far as the request knows
-// them, AckAt and TerminalAt are zero, and the outcome arrives on the orders stream as for a
-// command another connection sent.
+// queued: Order holds just its Contract, OrderID, ClientRequestID and CreateRequestID as far as
+// the request knows them, AckAt and TerminalAt are zero, and the outcome arrives on the orders
+// stream as for a command another connection sent.
 type OrderResult struct {
 	_ struct{}
 
@@ -94,7 +94,8 @@ type ModifyOrderRequest struct {
 }
 
 // CancelOrderRequest cancels one order, named by exactly one of OrderID and
-// OrderClientRequestID. ClientRequestID is this request's own, minted when empty.
+// OrderClientRequestID, which is the order's CreateRequestID or ClientRequestID. ClientRequestID
+// is this request's own, minted when empty.
 type CancelOrderRequest struct {
 	_ struct{}
 
@@ -229,7 +230,7 @@ func (c *Conn) CancelOrder(ctx context.Context, req CancelOrderRequest) (*OrderR
 	if httpErr != nil {
 		return nil, c.fallbackError(ClassOrderCancel, err, httpErr)
 	}
-	return queuedResult(queued, crid, req.OrderClientRequestID), nil
+	return queuedResult(queued, crid, ""), nil
 }
 
 // CancelAllOrders cancels every resting order on req.Contract, or on every contract of the
@@ -364,12 +365,12 @@ func createOutcome(err error, crid string) error {
 	})
 }
 
-// queuedResult's orderCrid is the order's own clientRequestId, empty when the request does not
-// name it.
-func queuedResult(q Queued, crid, orderCrid string) *OrderResult {
+// queuedResult's createCrid is the order's CreateRequestID, empty when the request does not know
+// it.
+func queuedResult(q Queued, crid, createCrid string) *OrderResult {
 	return &OrderResult{
 		ClientRequestID: crid,
-		Order:           Order{Contract: q.Contract, OrderID: q.OrderID, ClientRequestID: orderCrid},
+		Order:           Order{Contract: q.Contract, OrderID: q.OrderID, ClientRequestID: crid, CreateRequestID: createCrid},
 		ViaHTTP:         true,
 	}
 }

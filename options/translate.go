@@ -219,6 +219,7 @@ type wireOrder struct {
 	CreatedAt       int64  `json:"createdAt"`
 	UpdatedAt       int64  `json:"updatedAt"`
 	ClientRequestID string `json:"clientRequestId"`
+	CreateRequestID string `json:"createRequestId"`
 }
 
 // toOrder fills in the contract from the frame when the order object omits it.
@@ -240,5 +241,6 @@ func (w *wireOrder) toOrder(contract string) Order {
 		CreatedAt:       w.CreatedAt,
 		UpdatedAt:       w.UpdatedAt,
 		ClientRequestID: w.ClientRequestID,
+		CreateRequestID: w.CreateRequestID,
 	}
 }

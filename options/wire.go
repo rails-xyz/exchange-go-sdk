@@ -120,6 +120,7 @@ func recentOrdersResponseToPage(w optionsaccount.RecentOrders) *Page[RecentOrder
 		page.Items = append(page.Items, RecentOrder{
 			OrderID:         deref(o.OrderId),
 			ClientRequestID: deref(o.ClientRequestId),
+			CreateRequestID: deref(o.CreateRequestId),
 			Contract:        deref(o.Contract),
 			Side:            OrderType(deref(o.Side)),
 			Type:            TradeType(deref(o.Type)),
@@ -171,6 +172,7 @@ func openOrdersResponseToPage(w optionsmatching.OpenOrders) *Page[OpenOrder] {
 		page.Items = append(page.Items, OpenOrder{
 			OrderID:         o.OrderId,
 			ClientRequestID: deref(o.ClientRequestId),
+			CreateRequestID: deref(o.CreateRequestId),
 			Contract:        o.Contract,
 			Side:            OrderType(o.Side),
 			Type:            TradeType(o.Type),

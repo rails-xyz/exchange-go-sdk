@@ -705,7 +705,7 @@ components:
 
     Order:
       type: object
-      description: Omitted entirely from some error responses; when present, all fields below are populated.
+      description: Omitted entirely from some error responses; when present, every field below is populated except `createRequestId`, which is omitted for an order created without one.
       properties:
         contract:
           type: string
@@ -756,7 +756,15 @@ components:
           description: Last update time (ms since epoch)
         clientRequestId:
           type: string
-          description: Client-generated UUID of the create or modify request that last shaped the order
+          description: >
+            `clientRequestId` of the latest request on the order, such as its
+            create, modify or cancel request
+        createRequestId:
+          type: string
+          description: >
+            `clientRequestId` of the request that created the order. It never
+            changes. Omitted when the order was created without one, such as a
+            liquidation order
       required:
         - contract
         - orderId
@@ -1088,7 +1096,15 @@ components:
           description: Order identifier
         clientRequestId:
           type: string
-          description: Client-generated UUID of the create or modify request that last shaped the order
+          description: >
+            `clientRequestId` of the latest request on the order, such as its
+            create, modify or cancel request
+        createRequestId:
+          type: string
+          description: >
+            `clientRequestId` of the request that created the order. It never
+            changes. Omitted when the order was created without one, such as a
+            liquidation order
         contract:
           type: string
           description: Contract name
@@ -1167,7 +1183,15 @@ components:
           description: Order identifier
         clientRequestId:
           type: string
-          description: Client-generated UUID of the create or modify request that last shaped the order
+          description: >
+            `clientRequestId` of the latest request on the order, such as its
+            create, modify or cancel request
+        createRequestId:
+          type: string
+          description: >
+            `clientRequestId` of the request that created the order. It never
+            changes. Omitted when the order was created without one, such as a
+            liquidation order
         contract:
           type: string
           description: Contract name
@@ -1794,6 +1818,7 @@ components:
                 createdAt: 1783053411143
                 updatedAt: 1783053411171
                 clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+                createRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
               clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
 
     CreateOrderConfirmation:
@@ -1846,6 +1871,7 @@ components:
                 createdAt: 1783053411143
                 updatedAt: 1783053411174
                 clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+                createRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
               clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
 
     CreateOrderError:
@@ -1901,6 +1927,7 @@ components:
                 createdAt: 1783113342363
                 updatedAt: 1783113342365
                 clientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
+                createRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
               error:
                 code: "OPT-0104"
                 slug: CREATE_ORDER_SELF_TRADE
@@ -1996,6 +2023,7 @@ components:
                 createdAt: 1783053411143
                 updatedAt: 1783053548624
                 clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
+                createRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
               clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
 
     ModifyOrderConfirmation:
@@ -2048,6 +2076,7 @@ components:
                 createdAt: 1783053411143
                 updatedAt: 1783053548626
                 clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
+                createRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
               clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
 
     ModifyOrderError:
@@ -2125,8 +2154,8 @@ components:
                 type: string
                 format: uuid
                 description: >-
-                  The `clientRequestId` of the create or modify request that last shaped the target
-                  order. Required when `cancelBy` is `clientRequestId`
+                  The target order's `createRequestId` or `clientRequestId`. Required when
+                  `cancelBy` is `clientRequestId`
             required: [cancelBy]
             allOf:
               - if:
@@ -2158,7 +2187,7 @@ components:
               clientRequestId: 7a4e1c92-5b3d-4f8a-a6e0-2d9c8b1f3e57
               market: BTC-3JUL26-55000-C
               cancelBy: clientRequestId
-              orderClientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
+              orderClientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
 
     CancelOrderConfirmation:
       name: cancelOrderConfirmation
@@ -2209,7 +2238,8 @@ components:
                 postOnly: false
                 createdAt: 1783053411143
                 updatedAt: 1783053687411
-                clientRequestId: ee86bd11-6478-4aa2-917a-17c94b6c2db7
+                clientRequestId: b56692f8-4322-411d-846f-268c01cd4fa9
+                createRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
               clientRequestId: b56692f8-4322-411d-846f-268c01cd4fa9
 
     CancelOrderError:
@@ -2424,6 +2454,7 @@ components:
                 createdAt: 1783339818825
                 updatedAt: 1783339818882
                 clientRequestId: a9716fab-8ac2-47fd-803e-44e2ca22b948
+                createRequestId: a9716fab-8ac2-47fd-803e-44e2ca22b948
               clientRequestId: a9716fab-8ac2-47fd-803e-44e2ca22b948
 
     PartialFillNotification:
@@ -2476,6 +2507,7 @@ components:
                 createdAt: 1783339700000
                 updatedAt: 1783339750000
                 clientRequestId: 3d1f9c02-5a77-4c1e-9b6a-2e8d4f0b1c33
+                createRequestId: 3d1f9c02-5a77-4c1e-9b6a-2e8d4f0b1c33
               clientRequestId: 3d1f9c02-5a77-4c1e-9b6a-2e8d4f0b1c33
 
     SessionBackfillNotification:
@@ -3194,13 +3226,13 @@ components:
                   side: buy
                   updatedAt: 1783086811956
                 - executionType: taker
-                  matchId: 8d41e07c5a2b4f9e93c6d1a0b7e25f48-f1-1
+                  matchId: 8d41e07c5a2b4f9e93c6d1a0b7e25f48-1
                   price: "7210.97"
                   quantity: "1"
                   side: buy
                   updatedAt: 1783339818825
                 - executionType: maker
-                  matchId: 8d41e07c5a2b4f9e93c6d1a0b7e25f48-f1-1
+                  matchId: 8d41e07c5a2b4f9e93c6d1a0b7e25f48-1
                   price: "7210.97"
                   quantity: "1"
                   side: sell
@@ -3495,6 +3527,7 @@ components:
               orders:
                 - orderId: 01KWKXG9J8RNYDKXCWYZPBEW4C
                   clientRequestId: 6b0d8e3f-2a71-4c59-b8e4-1f7a9c3d5e20
+                  createRequestId: 6b0d8e3f-2a71-4c59-b8e4-1f7a9c3d5e20
                   contract: BTC-10JUL26-55000-C
                   side: buy
                   type: limit
@@ -3545,6 +3578,7 @@ components:
               orders:
                 - orderId: 01KWKXG9J8RNYDKXCWYZPBEW4C
                   clientRequestId: 6b0d8e3f-2a71-4c59-b8e4-1f7a9c3d5e20
+                  createRequestId: 6b0d8e3f-2a71-4c59-b8e4-1f7a9c3d5e20
                   contract: BTC-10JUL26-55000-C
                   side: buy
                   type: limit
@@ -3640,6 +3674,7 @@ components:
               orders:
                 - orderId: 01KWKXFHQJTQMNWPT1Y8X54HJP
                   clientRequestId: d4f2a816-9c3e-4b07-a5d1-8e6b2f0c7a93
+                  createRequestId: d4f2a816-9c3e-4b07-a5d1-8e6b2f0c7a93
                   contract: BTC-10JUL26-55000-C
                   side: buy
                   type: market
@@ -3688,6 +3723,7 @@ components:
               orders:
                 - orderId: 01KWKXFHQJTQMNWPT1Y8X54HJP
                   clientRequestId: d4f2a816-9c3e-4b07-a5d1-8e6b2f0c7a93
+                  createRequestId: d4f2a816-9c3e-4b07-a5d1-8e6b2f0c7a93
                   contract: BTC-10JUL26-55000-C
                   side: buy
                   type: market

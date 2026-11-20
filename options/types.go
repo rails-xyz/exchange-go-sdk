@@ -201,6 +201,7 @@ type RecentOrder struct {
 
 	OrderID         string
 	ClientRequestID string
+	CreateRequestID string
 	Contract        string
 	Side            OrderType
 	Type            TradeType
@@ -222,6 +223,7 @@ type OpenOrder struct {
 
 	OrderID         string
 	ClientRequestID string
+	CreateRequestID string
 	Contract        string
 	Side            OrderType
 	Type            TradeType
@@ -254,6 +256,7 @@ type Order struct {
 	CreatedAt       int64
 	UpdatedAt       int64
 	ClientRequestID string
+	CreateRequestID string
 }
 
 // OrderStatus is what the exchange has recorded about an order. Fields it has not recorded yet

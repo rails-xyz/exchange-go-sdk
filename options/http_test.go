@@ -236,13 +236,13 @@ func TestEveryOperationAgainstItsSpecExample(t *testing.T) {
 			want: &options.Page[options.RecentOrder]{
 				Items: []options.RecentOrder{
 					{
-						OrderID: "01J9G4K19776J1CTA8YXA8AA5H", ClientRequestID: "5e8b1d47-0c2a-4f96-9b3e-a7d2c6f1e804", Contract: "BTC-3JUL26-62000-C",
+						OrderID: "01J9G4K19776J1CTA8YXA8AA5H", ClientRequestID: "5e8b1d47-0c2a-4f96-9b3e-a7d2c6f1e804", CreateRequestID: "5e8b1d47-0c2a-4f96-9b3e-a7d2c6f1e804", Contract: "BTC-3JUL26-62000-C",
 						Side: options.OrderTypeBuy, Type: options.TradeTypeLimit, FillType: options.FillTypeComplete,
 						Price: "120", Quantity: "2", FilledQuantity: "2", AvgFillPrice: "110", Fees: "36.9",
 						CreatedAt: 1751284800000, UpdatedAt: 1751284803120,
 					},
 					{
-						OrderID: "01J9G51ABC7QK2DTB9ZYC9BB6J", ClientRequestID: "a1c93f06-7e2d-4b58-8f4a-3d6e9b0c2f71", Contract: "BTC-3JUL26-60000-P",
+						OrderID: "01J9G51ABC7QK2DTB9ZYC9BB6J", ClientRequestID: "a1c93f06-7e2d-4b58-8f4a-3d6e9b0c2f71", CreateRequestID: "a1c93f06-7e2d-4b58-8f4a-3d6e9b0c2f71", Contract: "BTC-3JUL26-60000-P",
 						Side: options.OrderTypeSell, Type: options.TradeTypeMarket, FillType: options.FillTypePartial,
 						Price: "15.40", Quantity: "3", FilledQuantity: "1", AvgFillPrice: "15.75", Fees: "1.52375",
 						CreatedAt: 1751288400000, UpdatedAt: 1751288460500,
@@ -295,7 +295,7 @@ func TestEveryOperationAgainstItsSpecExample(t *testing.T) {
 			wire:  &optionsmatching.OpenOrders{},
 			want: &options.Page[options.OpenOrder]{
 				Items: []options.OpenOrder{{
-					OrderID: orderID, ClientRequestID: crid, Contract: contract, Side: options.OrderTypeBuy, Type: options.TradeTypeLimit,
+					OrderID: orderID, ClientRequestID: crid, CreateRequestID: crid, Contract: contract, Side: options.OrderTypeBuy, Type: options.TradeTypeLimit,
 					Price: "1250.5", Quantity: "2", FilledQuantity: "1", AvgFillPrice: "1249",
 					CreatedAt: 1770000000000, UpdatedAt: 1770000001500,
 				}},

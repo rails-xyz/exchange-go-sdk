@@ -368,7 +368,8 @@ func TestCancelOrderGoesOverHTTPWhenTheSocketIsDown(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, got.ViaHTTP)
 	assert.NotEmpty(t, got.Order.OrderID)
-	assert.Empty(t, got.Order.ClientRequestID, "the cancel's clientRequestId is not the order's")
+	assert.Equal(t, crid, got.Order.ClientRequestID)
+	assert.Empty(t, got.Order.CreateRequestID)
 
 	sent := e.request()
 	assert.Equal(t, "/v1/matching/orders/cancel", sent.path)
@@ -385,7 +386,8 @@ func TestCancelOrderByClientRequestIDGoesOverHTTP(t *testing.T) {
 	got, err := conn.CancelOrder(t.Context(), options.CancelOrderRequest{Contract: testContract, OrderClientRequestID: target})
 	require.NoError(t, err)
 	assert.True(t, got.ViaHTTP)
-	assert.Equal(t, target, got.Order.ClientRequestID)
+	assert.Equal(t, got.ClientRequestID, got.Order.ClientRequestID)
+	assert.Empty(t, got.Order.CreateRequestID, "the target may be named by either id")
 
 	sent := spectest.Decode(t, spectest.Raw(t, spectest.Decode(t, e.request().body)["cancel"]))
 	assert.Equal(t, map[string]any{"contract": testContract, "orderClientRequestId": target}, sent)
@@ -452,6 +454,7 @@ func TestOnlyAReduceOnlyCreateGoesOverHTTPWhenTheSocketIsDown(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.True(t, got.ViaHTTP)
+			assert.Equal(t, crid, got.Order.CreateRequestID)
 			body := spectest.Decode(t, e.request().body)
 			assert.Equal(t, crid, body["clientRequestId"])
 		})

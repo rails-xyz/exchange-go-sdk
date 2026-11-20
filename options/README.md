@@ -127,8 +127,9 @@ the exchange answers:
   that finds no liquidity is answered with the order `cancelled`. A modify keeps the order's
   `OrderID`.
 - `CancelOrder` is answered without an acknowledgement, so `OrderResult.AckAt` is zero. It names
-  the order by `OrderID`, or by `OrderClientRequestID` when the `OrderID` is unknown. An order
-  already gone is refused with `options.CodeOrderNotFound`.
+  the order by `OrderID`, or by `OrderClientRequestID` (its `CreateRequestID` or
+  `ClientRequestID`) when the `OrderID` is unknown. An order already gone is refused with
+  `options.CodeOrderNotFound`.
 - `CancelAllOrders` sweeps one contract, or every contract of the connection's scope when
   `Contract` is empty, and returns an `*options.CancelAllResult` as soon as the exchange takes the
   sweep on. `Count` is the number of cancels it dispatched; each one is answered separately, as

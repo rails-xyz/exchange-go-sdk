@@ -580,6 +580,7 @@ func (w wirePosition) toPosition() Position {
 type wireOpenOrder struct {
 	OrderID         string `json:"orderId"`
 	ClientRequestID string `json:"clientRequestId"`
+	CreateRequestID string `json:"createRequestId"`
 	Contract        string `json:"contract"`
 	Side            string `json:"side"`
 	Type            string `json:"type"`
@@ -600,6 +601,7 @@ func (w wireOpenOrder) toOpenOrder() OpenOrder {
 	return OpenOrder{
 		OrderID:         w.OrderID,
 		ClientRequestID: w.ClientRequestID,
+		CreateRequestID: w.CreateRequestID,
 		Contract:        w.Contract,
 		Side:            OrderType(w.Side),
 		Type:            TradeType(w.Type),
@@ -621,6 +623,7 @@ func (w wireOpenOrder) toChange() OpenOrderChange {
 type wireRecentOrder struct {
 	OrderID         string `json:"orderId"`
 	ClientRequestID string `json:"clientRequestId"`
+	CreateRequestID string `json:"createRequestId"`
 	Contract        string `json:"contract"`
 	Side            string `json:"side"`
 	Type            string `json:"type"`
@@ -638,6 +641,7 @@ func (w wireRecentOrder) toRecentOrder() RecentOrder {
 	return RecentOrder{
 		OrderID:         w.OrderID,
 		ClientRequestID: w.ClientRequestID,
+		CreateRequestID: w.CreateRequestID,
 		Contract:        w.Contract,
 		Side:            OrderType(w.Side),
 		Type:            TradeType(w.Type),

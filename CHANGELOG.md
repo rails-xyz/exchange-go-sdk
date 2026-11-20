@@ -10,18 +10,16 @@ and versions follow [semantic versioning](https://semver.org/).
 - `options.Client.OrderStatusByClientRequestID`, which looks an order up by the
   `ClientRequestID` of a request sent for it, for when its `OrderID` is unknown.
 - `options.CancelOrderRequest.OrderClientRequestID`, which names the order to cancel by its
-  `ClientRequestID` instead of its `OrderID`; `options.Queued.OrderClientRequestID` carries it
-  back when the cancel is queued over HTTP.
+  `CreateRequestID` or `ClientRequestID` instead of its `OrderID`;
+  `options.Queued.OrderClientRequestID` carries it back when the cancel is queued over HTTP.
 - `ClientRequestID` on `options.OpenOrder` and `options.RecentOrder`.
+- `CreateRequestID` on `options.Order`, `options.OpenOrder` and `options.RecentOrder`.
 
 ### Changed
 
 - An options `CancelOrder` returns an error without sending anything unless exactly one of
   `OrderID` and `OrderClientRequestID` is set.
 - `options.Queued.OrderID` is empty for a cancel that named its order by `OrderClientRequestID`.
-- An options cancel that went over HTTP returns the order's own `ClientRequestID` in
-  `OrderResult.Order`, as the WebSocket answer does; the cancel's own stays in
-  `OrderResult.ClientRequestID`.
 
 ### Removed
 
