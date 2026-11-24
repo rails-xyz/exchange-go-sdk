@@ -227,7 +227,7 @@
                     "slug": "BAD_REQUEST",
                     "code": "SYS-0006"
                   },
-                  "message": "exactly one of orderId and orderClientRequestId is required"
+                  "message": "orderId is required"
                 }
               }
             }
@@ -523,7 +523,7 @@
       "get": {
         "summary": "Get Order Status by Client Request ID",
         "operationId": "getOptionsOrderStatusByClientRequestId",
-        "description": "Returns the current state of one of your orders by the `clientRequestId` of a create, modify or cancel request you sent for it. Use it only when the `orderId` is unknown, for example after a lost create response; the lookup covers about an hour after the order's last change. A cancel by `clientRequestId` that matched no order is found by its own `clientRequestId`, with status `not_found`. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
+        "description": "Returns the current state of one of your orders by the `clientRequestId` of a create, modify or cancel request you sent for it. Use it only when the `orderId` is unknown, for example after a lost create response; the lookup covers about an hour after the order's last change. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
         "parameters": [
           {
             "name": "clientRequestId",
@@ -928,13 +928,7 @@
         "properties": {
           "orderId": {
             "type": "string",
-            "description": "Target order identifier. Send exactly one of `orderId` and `orderClientRequestId`."
-          },
-          "orderClientRequestId": {
-            "type": "string",
-            "format": "uuid",
-            "x-go-type": "string",
-            "description": "The target order's `createRequestId` or `clientRequestId`. Use it only when the `orderId` is unknown, for example after a lost create response. Send exactly one of `orderId` and `orderClientRequestId`."
+            "description": "Target order identifier."
           },
           "contract": {
             "type": "string",
@@ -942,6 +936,7 @@
           }
         },
         "required": [
+          "orderId",
           "contract"
         ]
       },
@@ -1066,18 +1061,15 @@
           },
           "orderId": {
             "type": "string",
-            "description": "Unique identifier for the order. Absent when the cancel names the order by `orderClientRequestId`."
-          },
-          "orderClientRequestId": {
-            "type": "string",
-            "description": "The `orderClientRequestId` the cancel named its target order by, when it did."
+            "description": "Unique identifier for the order."
           }
         },
         "required": [
           "queued",
           "accepted",
           "action",
-          "contract"
+          "contract",
+          "orderId"
         ]
       },
       "CancelAllOrdersRequest": {

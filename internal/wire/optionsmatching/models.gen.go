@@ -179,11 +179,8 @@ type CancelOrderQueued struct {
 	// MessageId Identifier assigned to the queued request.
 	MessageId *string `json:"messageId,omitempty"`
 
-	// OrderClientRequestId The `orderClientRequestId` the cancel named its target order by, when it did.
-	OrderClientRequestId *string `json:"orderClientRequestId,omitempty"`
-
-	// OrderId Unique identifier for the order. Absent when the cancel names the order by `orderClientRequestId`.
-	OrderId *string `json:"orderId,omitempty"`
+	// OrderId Unique identifier for the order.
+	OrderId string `json:"orderId"`
 
 	// Queued Always `true`.
 	Queued bool `json:"queued"`
@@ -202,11 +199,8 @@ type CancelTarget struct {
 	// Contract Contract name. Example value: `BTC-7FEB26-100000-C`.
 	Contract string `json:"contract"`
 
-	// OrderClientRequestId The target order's `createRequestId` or `clientRequestId`. Use it only when the `orderId` is unknown, for example after a lost create response. Send exactly one of `orderId` and `orderClientRequestId`.
-	OrderClientRequestId *string `json:"orderClientRequestId,omitempty"`
-
-	// OrderId Target order identifier. Send exactly one of `orderId` and `orderClientRequestId`.
-	OrderId *string `json:"orderId,omitempty"`
+	// OrderId Target order identifier.
+	OrderId string `json:"orderId"`
 }
 
 // CreateOrderPayload defines model for CreateOrderPayload.

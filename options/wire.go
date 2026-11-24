@@ -205,22 +205,13 @@ func orderStatusResponseToStatus(w optionsmatching.OrderStatus) *OrderStatus {
 	}
 }
 
-func createOrderQueuedToQueued(w optionsmatching.CreateOrderQueued) Queued {
+// The create and modify responses have the cancel response's shape, and convert to it.
+func queuedResponseToQueued(w optionsmatching.CancelOrderQueued) Queued {
 	return Queued{
 		OrderID:         w.OrderId,
 		ClientRequestID: deref(w.ClientRequestId),
 		Contract:        w.Contract,
 		MessageID:       deref(w.MessageId),
-	}
-}
-
-func cancelOrderQueuedToQueued(w optionsmatching.CancelOrderQueued) Queued {
-	return Queued{
-		OrderID:              deref(w.OrderId),
-		ClientRequestID:      deref(w.ClientRequestId),
-		Contract:             w.Contract,
-		MessageID:            deref(w.MessageId),
-		OrderClientRequestID: deref(w.OrderClientRequestId),
 	}
 }
 
@@ -232,7 +223,7 @@ func cancelAllResponseToQueued(w optionsmatching.CancelAllOrdersQueued) *QueuedC
 		Cancels:         make([]Queued, 0, len(w.Cancels)),
 	}
 	for _, c := range w.Cancels {
-		out.Cancels = append(out.Cancels, cancelOrderQueuedToQueued(c))
+		out.Cancels = append(out.Cancels, queuedResponseToQueued(c))
 	}
 	for _, u := range derefSlice(w.Unqueued) {
 		out.Unqueued = append(out.Unqueued, UnqueuedCancel{OrderID: u.OrderId, Contract: u.Contract})

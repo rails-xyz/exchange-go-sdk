@@ -126,10 +126,8 @@ the exchange answers:
   arrival or is refused. A `200` is not always resting: read `Order.Status`, since a market order
   that finds no liquidity is answered with the order `cancelled`. A modify keeps the order's
   `OrderID`.
-- `CancelOrder` is answered without an acknowledgement, so `OrderResult.AckAt` is zero. It names
-  the order by `OrderID`, or by `OrderClientRequestID` (its `CreateRequestID` or
-  `ClientRequestID`) when the `OrderID` is unknown. An order already gone is refused with
-  `options.CodeOrderNotFound`.
+- `CancelOrder` is answered without an acknowledgement, so `OrderResult.AckAt` is zero. An order
+  already gone is refused with `options.CodeOrderNotFound`.
 - `CancelAllOrders` sweeps one contract, or every contract of the connection's scope when
   `Contract` is empty, and returns an `*options.CancelAllResult` as soon as the exchange takes the
   sweep on. `Count` is the number of cancels it dispatched; each one is answered separately, as
@@ -144,16 +142,15 @@ for a contract outside every scope it is held for.
 
 A create or modify is never resent. After `rails.ErrTimeout` or `rails.ErrConnClosed` it may
 still have been applied; the error carries the `ClientRequestID`. Before placing it again, look
-the order up with `client.OrderStatusByClientRequestID`, or cancel it with a `CancelOrder` that
-names it by `OrderClientRequestID`.
+the order up with `client.OrderStatusByClientRequestID`.
 
 ### When the socket is down
 
 Cancelling and closing positions go over HTTP when the connection cannot carry them:
 
 - `CancelOrder` and `CancelAllOrders`, when the socket is down or dropped before the answer
-  came. A cancel is idempotent, so one that may have reached the exchange is sent again under a
-  fresh `ClientRequestID`. `CancelAllOrders` without a `Contract` goes over HTTP
+  came. A cancel is idempotent by order id, so one that may have reached the exchange is sent
+  again under a fresh `ClientRequestID`. `CancelAllOrders` without a `Contract` goes over HTTP
   only on a `ScopeAll()` connection, since there it sweeps every contract of the account.
 - A `CreateOrder` with `ReduceOnly`, when the socket is down. One that may have reached the
   exchange is never resent, as it could close the position twice.

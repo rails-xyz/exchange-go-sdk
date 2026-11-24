@@ -304,11 +304,10 @@ type Withdrawal struct {
 type Queued struct {
 	_ struct{}
 
-	OrderID              string // empty for a cancel that named the order by OrderClientRequestID
-	ClientRequestID      string
-	Contract             string
-	MessageID            string // the id the queue assigned the request
-	OrderClientRequestID string
+	OrderID         string
+	ClientRequestID string
+	Contract        string
+	MessageID       string // the id the queue assigned the request
 }
 
 // QueuedCancelAll is the cancels a [Client.CancelAllOrders] queued, one per open order it

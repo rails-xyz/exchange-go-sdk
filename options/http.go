@@ -227,7 +227,7 @@ func (c *Client) createOrder(ctx context.Context, req CreateOrderRequest, crid s
 	if err := c.http.Post(ctx, op, "", c.cfg.Environment.OptionsURL, "/v1/matching/orders/create", body, &resp); err != nil {
 		return Queued{}, withClientRequestID(err, crid)
 	}
-	return createOrderQueuedToQueued(resp), nil
+	return queuedResponseToQueued(optionsmatching.CancelOrderQueued(resp)), nil
 }
 
 func (c *Client) cancelOrder(ctx context.Context, req CancelOrderRequest, crid string) (Queued, error) {
@@ -235,17 +235,13 @@ func (c *Client) cancelOrder(ctx context.Context, req CancelOrderRequest, crid s
 
 	body := optionsmatching.CancelOptionsOrderJSONRequestBody{
 		ClientRequestId: &crid,
-		Cancel: optionsmatching.CancelTarget{
-			Contract:             req.Contract,
-			OrderId:              optional(req.OrderID),
-			OrderClientRequestId: optional(req.OrderClientRequestID),
-		},
+		Cancel:          optionsmatching.CancelTarget{Contract: req.Contract, OrderId: req.OrderID},
 	}
 	var resp optionsmatching.CancelOrderQueued
 	if err := c.http.Post(ctx, op, "", c.cfg.Environment.OptionsURL, "/v1/matching/orders/cancel", body, &resp); err != nil {
 		return Queued{}, withClientRequestID(err, crid)
 	}
-	return cancelOrderQueuedToQueued(resp), nil
+	return queuedResponseToQueued(resp), nil
 }
 
 // CancelAllOrdersRequest cancels every open order on one contract, or when Contract is empty on

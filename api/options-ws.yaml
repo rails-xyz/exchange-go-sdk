@@ -418,7 +418,7 @@ operations:
     action: receive
     channel:
       $ref: '#/channels/orderManagementStream'
-    summary: Cancel an order by `orderId` or `clientRequestId`.
+    summary: Cancel an order by ID.
     messages:
       - $ref: '#/channels/orderManagementStream/messages/cancelOrderRequest'
   cancelOrderResult:
@@ -2141,53 +2141,22 @@ components:
               market:
                 type: string
                 description: Contract name; required unless the connection is scoped to one contract
-              cancelBy:
-                type: string
-                enum: [orderId, clientRequestId]
-                description: >-
-                  How the target order is named: `orderId`, or `clientRequestId` when the `orderId`
-                  is unknown, for example after a lost create response
               orderId:
                 type: string
-                description: Target order identifier. Required when `cancelBy` is `orderId`
-              orderClientRequestId:
+                description: Target order identifier
+              cancelBy:
                 type: string
-                format: uuid
-                description: >-
-                  The target order's `createRequestId` or `clientRequestId`. Required when
-                  `cancelBy` is `clientRequestId`
-            required: [cancelBy]
-            allOf:
-              - if:
-                  properties:
-                    cancelBy:
-                      const: orderId
-                then:
-                  required: [orderId]
-              - if:
-                  properties:
-                    cancelBy:
-                      const: clientRequestId
-                then:
-                  required: [orderClientRequestId]
+                description: Cancellation mode; currently `orderId`
+            required: [orderId, cancelBy]
         required: [message, content]
       examples:
-        - name: ByOrderId
-          payload:
+        - payload:
             message: cancelOrder
             content:
               clientRequestId: b56692f8-4322-411d-846f-268c01cd4fa9
               market: BTC-3JUL26-55000-C
               cancelBy: orderId
               orderId: 01KWK47RT6A4DD1TCQE662QJ3W
-        - name: ByClientRequestId
-          payload:
-            message: cancelOrder
-            content:
-              clientRequestId: 7a4e1c92-5b3d-4f8a-a6e0-2d9c8b1f3e57
-              market: BTC-3JUL26-55000-C
-              cancelBy: clientRequestId
-              orderClientRequestId: 3e2c3bb4-be3f-4d05-9133-51d3a27b74ef
 
     CancelOrderConfirmation:
       name: cancelOrderConfirmation

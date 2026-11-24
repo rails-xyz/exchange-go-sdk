@@ -19,8 +19,8 @@ const (
 	opCancelOrder     = "cancelOrder"
 	opCancelAllOrders = "cancelAllOrders"
 
-	cancelByOrderID         = "orderId"
-	cancelByClientRequestID = "clientRequestId"
+	// cancelByOrderID is the only documented cancellation mode.
+	cancelByOrderID = "orderId"
 )
 
 // OrderResult is how the exchange answered an order command over the WebSocket, with the order
@@ -93,23 +93,13 @@ type ModifyOrderRequest struct {
 	ClientRequestID string
 }
 
-// CancelOrderRequest cancels one order, named by exactly one of OrderID and
-// OrderClientRequestID, which is the order's CreateRequestID or ClientRequestID. ClientRequestID
-// is this request's own, minted when empty.
+// CancelOrderRequest cancels one order. ClientRequestID is minted when empty.
 type CancelOrderRequest struct {
 	_ struct{}
 
-	Contract             string
-	OrderID              string
-	OrderClientRequestID string
-	ClientRequestID      string
-}
-
-func (r CancelOrderRequest) validate(op string) error {
-	if (r.OrderID == "") == (r.OrderClientRequestID == "") {
-		return fmt.Errorf("%s: exactly one of order id and order client request id is required", op)
-	}
-	return nil
+	Contract        string
+	OrderID         string
+	ClientRequestID string
 }
 
 // CreateOrder places an order and waits for the exchange's answer: the order resting, filled on
@@ -119,9 +109,9 @@ func (r CancelOrderRequest) validate(op string) error {
 //
 // The order may be live when this returns [rails.ErrTimeout] or [rails.ErrConnClosed], or a 502
 // or 504 after it went over HTTP, and the SDK never resends. Look it up by the ClientRequestID
-// the [*rails.Error] carries with [Client.OrderStatusByClientRequestID], or cancel it with
-// [CancelOrderRequest.OrderClientRequestID], before placing it again. [ErrNotSubscribed],
-// [ErrOutOfScope], [rails.ErrNotSent] or a bare [context] error mean it never left.
+// the [*rails.Error] carries with [Client.OrderStatusByClientRequestID] before placing it again.
+// [ErrNotSubscribed], [ErrOutOfScope], [rails.ErrNotSent] or a bare [context] error mean it never
+// left.
 //
 // A ReduceOnly create, which closes a position, goes over HTTP when the socket is down
 // ([OrderResult.ViaHTTP]).
@@ -192,19 +182,12 @@ func (c *Conn) ModifyOrder(ctx context.Context, req ModifyOrderRequest) (*OrderR
 // CancelOrder cancels an order and waits for the exchange's answer, which comes without an
 // acknowledgement. An order already gone is refused with [CodeOrderNotFound].
 //
-// Cancelling is idempotent, so a cancel the socket could not carry, or lost the answer to with
-// [rails.ErrConnClosed], goes over HTTP instead ([OrderResult.ViaHTTP]), under a fresh
-// ClientRequestID when the first one may have reached the exchange.
+// Cancelling is idempotent by order id, so a cancel the socket could not carry, or lost the
+// answer to with [rails.ErrConnClosed], goes over HTTP instead ([OrderResult.ViaHTTP]), under a
+// fresh ClientRequestID when the first one may have reached the exchange.
 func (c *Conn) CancelOrder(ctx context.Context, req CancelOrderRequest) (*OrderResult, error) {
 	if err := c.guardContract(opCancelOrder, req.Contract); err != nil {
 		return nil, err
-	}
-	if err := req.validate(opCancelOrder); err != nil {
-		return nil, err
-	}
-	cancelBy := cancelByOrderID
-	if req.OrderClientRequestID != "" {
-		cancelBy = cancelByClientRequestID
 	}
 	crid := clientRequestID(req.ClientRequestID)
 	reply, err := c.send(ctx, ClassOrderCancel, ws.Send{
@@ -212,11 +195,10 @@ func (c *Conn) CancelOrder(ctx context.Context, req CancelOrderRequest) (*OrderR
 		ClientRequestID: crid,
 		Market:          req.Contract,
 		Content: cancelOrderContent{
-			ClientRequestID:      crid,
-			Market:               req.Contract,
-			OrderID:              req.OrderID,
-			OrderClientRequestID: req.OrderClientRequestID,
-			CancelBy:             cancelBy,
+			ClientRequestID: crid,
+			Market:          req.Contract,
+			OrderID:         req.OrderID,
+			CancelBy:        cancelByOrderID,
 		},
 	})
 	if err == nil {
@@ -301,11 +283,10 @@ type modifyOrderContent struct {
 }
 
 type cancelOrderContent struct {
-	ClientRequestID      string `json:"clientRequestId"`
-	Market               string `json:"market"`
-	OrderID              string `json:"orderId,omitempty"`
-	OrderClientRequestID string `json:"orderClientRequestId,omitempty"`
-	CancelBy             string `json:"cancelBy"`
+	ClientRequestID string `json:"clientRequestId"`
+	Market          string `json:"market"`
+	OrderID         string `json:"orderId"`
+	CancelBy        string `json:"cancelBy"`
 }
 
 // Market is omitted when empty, so the exchange sweeps the connection's scope.

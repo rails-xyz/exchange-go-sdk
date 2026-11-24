@@ -358,10 +358,9 @@ func checkCancelOrderRequest(t *testing.T, ex spectest.Example) {
 	conn := tradingConn(t, srv, options.ScopeAll())
 	go func() {
 		_, _ = conn.CancelOrder(t.Context(), options.CancelOrderRequest{
-			Contract:             spectest.Str(content["market"]),
-			OrderID:              spectest.Str(content["orderId"]),
-			OrderClientRequestID: spectest.Str(content["orderClientRequestId"]),
-			ClientRequestID:      spectest.Str(content["clientRequestId"]),
+			Contract:        spectest.Str(content["market"]),
+			OrderID:         spectest.Str(content["orderId"]),
+			ClientRequestID: spectest.Str(content["clientRequestId"]),
 		})
 	}()
 	spectest.AssertSends(t, spectest.Decode(t, command(t, srv, "cancelOrder").Content), content)
