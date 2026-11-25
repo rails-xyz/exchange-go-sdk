@@ -176,35 +176,29 @@ func repeatedToken(op, sent, next string) error {
 // request returned. The exchange forgets an order an hour after its last update and answers
 // [rails.ErrNotFound].
 func (c *Client) OrderStatus(ctx context.Context, orderID string) (*OrderStatus, error) {
-	const op = "GET /v1/matching/orders/{orderId}"
-
 	if orderID == "" {
-		return nil, fmt.Errorf("%s: order id is required", op)
+		return nil, fmt.Errorf("%s: order id is required", opOrderStatus)
 	}
-	var resp optionsmatching.OrderStatus
-	if err := c.http.Get(ctx, op, ClassReadOrders, c.cfg.Environment.OptionsURL, "/v1/matching/orders/"+url.PathEscape(orderID), nil, &resp); err != nil {
-		return nil, err
-	}
-	return orderStatusResponseToStatus(resp), nil
+	return c.orderStatus(ctx, url.Values{"orderId": {orderID}})
 }
 
 // OrderStatusByClientRequestID is [Client.OrderStatus] for an order whose OrderID you do not
 // have, by the ClientRequestID of a request you sent for it.
 func (c *Client) OrderStatusByClientRequestID(ctx context.Context, clientRequestID string) (*OrderStatus, error) {
-	const op = "GET /v1/matching/orders"
-
 	if clientRequestID == "" {
-		return nil, fmt.Errorf("%s: client request id is required", op)
+		return nil, fmt.Errorf("%s: client request id is required", opOrderStatus)
 	}
-	query := url.Values{"clientRequestId": {clientRequestID}}
-	var resp optionsmatching.Orders
-	if err := c.http.Get(ctx, op, ClassReadOrders, c.cfg.Environment.OptionsURL, "/v1/matching/orders", query, &resp); err != nil {
+	return c.orderStatus(ctx, url.Values{"clientRequestId": {clientRequestID}})
+}
+
+const opOrderStatus = "GET /v1/matching/order"
+
+func (c *Client) orderStatus(ctx context.Context, query url.Values) (*OrderStatus, error) {
+	var resp optionsmatching.OrderStatus
+	if err := c.http.Get(ctx, opOrderStatus, ClassReadOrders, c.cfg.Environment.OptionsURL, "/v1/matching/order", query, &resp); err != nil {
 		return nil, err
 	}
-	if len(resp.Orders) == 0 {
-		return nil, fmt.Errorf("%s: %w", op, rails.ErrNotFound)
-	}
-	return orderStatusResponseToStatus(resp.Orders[0]), nil
+	return orderStatusResponseToStatus(resp), nil
 }
 
 // createOrder, cancelOrder and cancelAllOrders carry a [Conn] command its socket could not,

@@ -442,12 +442,6 @@ type OrderStatusAction string
 // OrderStatusStatus Order status. See [Order Lifecycle](/latest/options/guides/order-lifecycle#order-statuses).
 type OrderStatusStatus string
 
-// Orders defines model for Orders.
-type Orders struct {
-	// Orders The matching orders; empty when none matched.
-	Orders []OrderStatus `json:"orders"`
-}
-
 // UnqueuedCancel defines model for UnqueuedCancel.
 type UnqueuedCancel struct {
 	// Contract Contract name.
@@ -499,10 +493,13 @@ type RateLimited struct {
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
-// GetOptionsOrdersParams defines parameters for GetOptionsOrders.
-type GetOptionsOrdersParams struct {
-	// ClientRequestId The `clientRequestId` sent with a create, modify or cancel request. Repeat the parameter to look up several, up to 20.
-	ClientRequestId []string `form:"clientRequestId" json:"clientRequestId"`
+// GetOptionsOrderStatusParams defines parameters for GetOptionsOrderStatus.
+type GetOptionsOrderStatusParams struct {
+	// OrderId Unique identifier of the order. Example value: `01JRQM8H5XYZABCDEFGHJKMNPQ`. You can get this value from the create, modify or cancel response. Send either `orderId` or `clientRequestId`, not both.
+	OrderId *string `form:"orderId,omitempty" json:"orderId,omitempty"`
+
+	// ClientRequestId The `clientRequestId` of a create, modify or cancel request you sent for the order. Use it only when the `orderId` is unknown. Send either `orderId` or `clientRequestId`, not both.
+	ClientRequestId *string `form:"clientRequestId,omitempty" json:"clientRequestId,omitempty"`
 }
 
 // GetOptionsOpenOrdersParams defines parameters for GetOptionsOpenOrders.

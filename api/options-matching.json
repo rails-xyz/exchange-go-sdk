@@ -431,17 +431,24 @@
         }
       }
     },
-    "/v1/matching/orders/{orderId}": {
+    "/v1/matching/order": {
       "get": {
         "summary": "Get Order Status",
         "operationId": "getOptionsOrderStatus",
-        "description": "Returns the current state of one of your orders; an order placed by another account is `404`. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
+        "description": "Returns the current state of one of your orders, found by its `orderId` or, when the `orderId` is unknown, for example after a lost create response, by the `clientRequestId` of a create, modify or cancel request you sent for it. Send exactly one of the two. An order placed by another account is `404`, and a `clientRequestId` finds its order for about an hour after that request. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
         "parameters": [
           {
             "name": "orderId",
-            "in": "path",
-            "required": true,
-            "description": "Unique identifier of the order. Example value: `01JRQM8H5XYZABCDEFGHJKMNPQ`. You can get this value from the create, modify or cancel response.",
+            "in": "query",
+            "description": "Unique identifier of the order. Example value: `01JRQM8H5XYZABCDEFGHJKMNPQ`. You can get this value from the create, modify or cancel response. Send either `orderId` or `clientRequestId`, not both.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "query",
+            "description": "The `clientRequestId` of a create, modify or cancel request you sent for the order. Use it only when the `orderId` is unknown. Send either `orderId` or `clientRequestId`, not both.",
             "schema": {
               "type": "string"
             }
@@ -482,7 +489,7 @@
                     "slug": "BAD_REQUEST",
                     "code": "SYS-0006"
                   },
-                  "message": "orderId is required"
+                  "message": "send either orderId or clientRequestId"
                 }
               }
             }
@@ -506,88 +513,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "502": {
-            "$ref": "#/components/responses/MatchingUnavailable"
-          },
-          "504": {
-            "$ref": "#/components/responses/MatchingTimeout"
-          }
-        }
-      }
-    },
-    "/v1/matching/orders": {
-      "get": {
-        "summary": "Get Orders",
-        "operationId": "getOptionsOrders",
-        "description": "Returns your orders that a create, modify or cancel request with one of the given `clientRequestId`s was sent for, each once and in its current state. Use it when an `orderId` is unknown, for example after a lost create response; the lookup covers about an hour after an order's last change. A `clientRequestId` that matches no order is left out, so an empty `orders` means none matched. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
-        "parameters": [
-          {
-            "name": "clientRequestId",
-            "in": "query",
-            "required": true,
-            "description": "The `clientRequestId` sent with a create, modify or cancel request. Repeat the parameter to look up several, up to 20.",
-            "style": "form",
-            "explode": true,
-            "schema": {
-              "type": "array",
-              "minItems": 1,
-              "maxItems": 20,
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Orders"
-                },
-                "example": {
-                  "orders": [
-                    {
-                      "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
-                      "status": "open",
-                      "body": "order accepted",
-                      "action": "create",
-                      "contract": "BTC-7FEB26-100000-C",
-                      "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ",
-                      "quantity": "2",
-                      "filledQuantity": "1",
-                      "remainingQuantity": "1",
-                      "updatedAt": 1770000001500
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": {
-                    "slug": "BAD_REQUEST",
-                    "code": "SYS-0006"
-                  },
-                  "message": "at most 20 clientRequestId values"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -1207,21 +1132,6 @@
         "required": [
           "status",
           "updatedAt"
-        ]
-      },
-      "Orders": {
-        "type": "object",
-        "properties": {
-          "orders": {
-            "type": "array",
-            "description": "The matching orders; empty when none matched.",
-            "items": {
-              "$ref": "#/components/schemas/OrderStatus"
-            }
-          }
-        },
-        "required": [
-          "orders"
         ]
       },
       "OpenOrders": {
