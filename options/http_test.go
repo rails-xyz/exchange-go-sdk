@@ -314,11 +314,12 @@ func TestEveryOperationAgainstItsSpecExample(t *testing.T) {
 			},
 		},
 		{
-			spec: "options-matching", op: "GET /v1/matching/orders/by-client-request-id/{clientRequestId}",
+			spec: "options-matching", op: "GET /v1/matching/orders",
 			call: func(ctx context.Context, c *options.Client) (any, error) {
 				return c.OrderStatusByClientRequestID(ctx, crid)
 			},
-			path:  "/v1/matching/orders/by-client-request-id/" + crid,
+			path:  "/v1/matching/orders",
+			query: url.Values{"clientRequestId": {crid}},
 			class: options.ClassReadOrders,
 			wire:  &optionsmatching.OrderStatus{},
 			want: &options.OrderStatus{

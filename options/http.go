@@ -191,14 +191,14 @@ func (c *Client) OrderStatus(ctx context.Context, orderID string) (*OrderStatus,
 // OrderStatusByClientRequestID is [Client.OrderStatus] for an order whose OrderID you do not
 // have, by the ClientRequestID of a request you sent for it.
 func (c *Client) OrderStatusByClientRequestID(ctx context.Context, clientRequestID string) (*OrderStatus, error) {
-	const op = "GET /v1/matching/orders/by-client-request-id/{clientRequestId}"
+	const op = "GET /v1/matching/orders"
 
 	if clientRequestID == "" {
 		return nil, fmt.Errorf("%s: client request id is required", op)
 	}
-	path := "/v1/matching/orders/by-client-request-id/" + url.PathEscape(clientRequestID)
+	query := url.Values{"clientRequestId": {clientRequestID}}
 	var resp optionsmatching.OrderStatus
-	if err := c.http.Get(ctx, op, ClassReadOrders, c.cfg.Environment.OptionsURL, path, nil, &resp); err != nil {
+	if err := c.http.Get(ctx, op, ClassReadOrders, c.cfg.Environment.OptionsURL, "/v1/matching/orders", query, &resp); err != nil {
 		return nil, err
 	}
 	return orderStatusResponseToStatus(resp), nil

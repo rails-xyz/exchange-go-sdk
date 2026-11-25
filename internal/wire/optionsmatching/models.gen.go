@@ -493,6 +493,12 @@ type RateLimited struct {
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
+// GetOptionsOrderStatusByClientRequestIdParams defines parameters for GetOptionsOrderStatusByClientRequestId.
+type GetOptionsOrderStatusByClientRequestIdParams struct {
+	// ClientRequestId The `clientRequestId` sent with the create, modify or cancel request.
+	ClientRequestId string `form:"clientRequestId" json:"clientRequestId"`
+}
+
 // GetOptionsOpenOrdersParams defines parameters for GetOptionsOpenOrders.
 type GetOptionsOpenOrdersParams struct {
 	// PageSize Items per page.

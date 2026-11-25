@@ -519,7 +519,7 @@
         }
       }
     },
-    "/v1/matching/orders/by-client-request-id/{clientRequestId}": {
+    "/v1/matching/orders": {
       "get": {
         "summary": "Get Order Status by Client Request ID",
         "operationId": "getOptionsOrderStatusByClientRequestId",
@@ -527,7 +527,7 @@
         "parameters": [
           {
             "name": "clientRequestId",
-            "in": "path",
+            "in": "query",
             "required": true,
             "description": "The `clientRequestId` sent with the create, modify or cancel request.",
             "schema": {
