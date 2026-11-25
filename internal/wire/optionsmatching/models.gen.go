@@ -442,6 +442,12 @@ type OrderStatusAction string
 // OrderStatusStatus Order status. See [Order Lifecycle](/latest/options/guides/order-lifecycle#order-statuses).
 type OrderStatusStatus string
 
+// Orders defines model for Orders.
+type Orders struct {
+	// Orders The matching orders; empty when none matched.
+	Orders []OrderStatus `json:"orders"`
+}
+
 // UnqueuedCancel defines model for UnqueuedCancel.
 type UnqueuedCancel struct {
 	// Contract Contract name.
@@ -493,10 +499,10 @@ type RateLimited struct {
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
-// GetOptionsOrderStatusByClientRequestIdParams defines parameters for GetOptionsOrderStatusByClientRequestId.
-type GetOptionsOrderStatusByClientRequestIdParams struct {
-	// ClientRequestId The `clientRequestId` sent with the create, modify or cancel request.
-	ClientRequestId string `form:"clientRequestId" json:"clientRequestId"`
+// GetOptionsOrdersParams defines parameters for GetOptionsOrders.
+type GetOptionsOrdersParams struct {
+	// ClientRequestId The `clientRequestId` sent with a create, modify or cancel request. Repeat the parameter to look up several, up to 20.
+	ClientRequestId []string `form:"clientRequestId" json:"clientRequestId"`
 }
 
 // GetOptionsOpenOrdersParams defines parameters for GetOptionsOpenOrders.

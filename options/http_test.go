@@ -321,7 +321,7 @@ func TestEveryOperationAgainstItsSpecExample(t *testing.T) {
 			path:  "/v1/matching/orders",
 			query: url.Values{"clientRequestId": {crid}},
 			class: options.ClassReadOrders,
-			wire:  &optionsmatching.OrderStatus{},
+			wire:  &optionsmatching.Orders{},
 			want: &options.OrderStatus{
 				OrderID: orderID, ClientRequestID: crid, Contract: contract,
 				Status: options.StatusOpen, Action: options.ActionCreate, Body: "order accepted",
@@ -487,6 +487,12 @@ func TestPathParametersAreEscaped(t *testing.T) {
 	_, err := e.client().OrderStatus(t.Context(), "my/order 1")
 	require.NoError(t, err)
 	assert.Equal(t, "/v1/matching/orders/my%2Forder%201", e.request().path)
+}
+
+func TestOrderStatusByClientRequestIDNotFound(t *testing.T) {
+	e := newExchange(t, http.StatusOK, []byte(`{"orders":[]}`))
+	_, err := e.client().OrderStatusByClientRequestID(t.Context(), "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55")
+	assert.ErrorIs(t, err, rails.ErrNotFound)
 }
 
 func TestRequiredInputsAreCheckedBeforeSending(t *testing.T) {

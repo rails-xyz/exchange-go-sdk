@@ -197,11 +197,14 @@ func (c *Client) OrderStatusByClientRequestID(ctx context.Context, clientRequest
 		return nil, fmt.Errorf("%s: client request id is required", op)
 	}
 	query := url.Values{"clientRequestId": {clientRequestID}}
-	var resp optionsmatching.OrderStatus
+	var resp optionsmatching.Orders
 	if err := c.http.Get(ctx, op, ClassReadOrders, c.cfg.Environment.OptionsURL, "/v1/matching/orders", query, &resp); err != nil {
 		return nil, err
 	}
-	return orderStatusResponseToStatus(resp), nil
+	if len(resp.Orders) == 0 {
+		return nil, fmt.Errorf("%s: %w", op, rails.ErrNotFound)
+	}
+	return orderStatusResponseToStatus(resp.Orders[0]), nil
 }
 
 // createOrder, cancelOrder and cancelAllOrders carry a [Conn] command its socket could not,

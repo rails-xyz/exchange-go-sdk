@@ -301,8 +301,9 @@ the gateway reports outside any command holds back every class.
 
 ## Errors
 
-Every failure is a `*rails.Error`; the options order codes are `options.Code*`, the codes every
-product shares `rails.Code*`, and the error model is in the [main README](../README.md#errors).
+Every failure the exchange described is a `*rails.Error`; the options order codes are
+`options.Code*`, the codes every product shares `rails.Code*`, and the error model is in the
+[main README](../README.md#errors).
 
 ```go
 var apiErr *rails.Error

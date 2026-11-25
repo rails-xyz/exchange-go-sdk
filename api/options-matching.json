@@ -521,17 +521,24 @@
     },
     "/v1/matching/orders": {
       "get": {
-        "summary": "Get Order Status by Client Request ID",
-        "operationId": "getOptionsOrderStatusByClientRequestId",
-        "description": "Returns the current state of one of your orders by the `clientRequestId` of a create, modify or cancel request you sent for it. Use it only when the `orderId` is unknown, for example after a lost create response; the lookup covers about an hour after the order's last change. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
+        "summary": "Get Orders",
+        "operationId": "getOptionsOrders",
+        "description": "Returns your orders that a create, modify or cancel request with one of the given `clientRequestId`s was sent for, each once and in its current state. Use it when an `orderId` is unknown, for example after a lost create response; the lookup covers about an hour after an order's last change. A `clientRequestId` that matches no order is left out, so an empty `orders` means none matched. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
         "parameters": [
           {
             "name": "clientRequestId",
             "in": "query",
             "required": true,
-            "description": "The `clientRequestId` sent with the create, modify or cancel request.",
+            "description": "The `clientRequestId` sent with a create, modify or cancel request. Repeat the parameter to look up several, up to 20.",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "string"
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": {
+                "type": "string"
+              }
             }
           }
         ],
@@ -541,19 +548,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrderStatus"
+                  "$ref": "#/components/schemas/Orders"
                 },
                 "example": {
-                  "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
-                  "status": "open",
-                  "body": "order accepted",
-                  "action": "create",
-                  "contract": "BTC-7FEB26-100000-C",
-                  "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ",
-                  "quantity": "2",
-                  "filledQuantity": "1",
-                  "remainingQuantity": "1",
-                  "updatedAt": 1770000001500
+                  "orders": [
+                    {
+                      "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
+                      "status": "open",
+                      "body": "order accepted",
+                      "action": "create",
+                      "contract": "BTC-7FEB26-100000-C",
+                      "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ",
+                      "quantity": "2",
+                      "filledQuantity": "1",
+                      "remainingQuantity": "1",
+                      "updatedAt": 1770000001500
+                    }
+                  ]
                 }
               }
             }
@@ -570,30 +581,13 @@
                     "slug": "BAD_REQUEST",
                     "code": "SYS-0006"
                   },
-                  "message": "clientRequestId is required"
+                  "message": "at most 20 clientRequestId values"
                 }
               }
             }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": {
-                    "slug": "NOT_FOUND",
-                    "code": "SYS-0007"
-                  },
-                  "message": "order not found"
-                }
-              }
-            }
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -1213,6 +1207,21 @@
         "required": [
           "status",
           "updatedAt"
+        ]
+      },
+      "Orders": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "description": "The matching orders; empty when none matched.",
+            "items": {
+              "$ref": "#/components/schemas/OrderStatus"
+            }
+          }
+        },
+        "required": [
+          "orders"
         ]
       },
       "OpenOrders": {
