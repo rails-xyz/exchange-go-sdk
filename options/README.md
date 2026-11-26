@@ -85,7 +85,8 @@ The HTTP operations on `client`:
 - Contracts: `Expirations` (the expiry dates of a market such as `BTC-USDT`), `Contracts` (every
   contract of one expiry, with its prices, implied volatility and greeks).
 - Account: `AccountSummary`, `Positions`, `Deposits`, `Withdrawals`.
-- Orders: `OpenOrders`, `RecentOrders` (completed or cancelled), `OrderStatus`.
+- Orders: `OpenOrders`, `RecentOrders` (completed or cancelled), `OrderStatus`, and
+  `OrderStatusByClientRequestID` for an order whose `OrderID` you do not have.
 - Cancel all: `CancelAllOrders`, which needs no WebSocket connection.
 
 Contracts are named in full, such as `BTC-7FEB26-100000-C`: underlying, expiry, strike, and `C`
@@ -123,8 +124,8 @@ the exchange answers:
 
 - `CreateOrder` and `ModifyOrder` return an `*options.OrderResult` once the order rests, fills on
   arrival or is refused. A `200` is not always resting: read `Order.Status`, since a market order
-  that finds no liquidity is answered with the order `cancelled`. A create takes an `OrderID` of
-  your own, a ULID, and mints one when it has none; a modify keeps the order's `OrderID`.
+  that finds no liquidity is answered with the order `cancelled`. A modify keeps the order's
+  `OrderID`.
 - `CancelOrder` is answered without an acknowledgement, so `OrderResult.AckAt` is zero. An order
   already gone is refused with `options.CodeOrderNotFound`.
 - `CancelAllOrders` sweeps one contract, or every contract of the connection's scope when
@@ -140,9 +141,8 @@ anything is sent: `options.ErrNotSubscribed` without the orders stream, `options
 for a contract outside every scope it is held for.
 
 A create or modify is never resent. After `rails.ErrTimeout` or `rails.ErrConnClosed` it may
-still have been applied; the error carries the `ClientRequestID`, and for a create the
-`OrderID`. Before placing it again, look for that order in `client.OpenOrders` and in both
-`client.RecentOrders` histories, since it may already have filled or been cancelled.
+still have been applied; the error carries the `ClientRequestID`. Before placing it again, look
+the order up with `client.OrderStatusByClientRequestID`.
 
 ### When the socket is down
 
@@ -301,8 +301,9 @@ the gateway reports outside any command holds back every class.
 
 ## Errors
 
-Every failure is a `*rails.Error`; the options order codes are `options.Code*`, the codes every
-product shares `rails.Code*`, and the error model is in the [main README](../README.md#errors).
+Every failure the exchange described is a `*rails.Error`; the options order codes are
+`options.Code*`, the codes every product shares `rails.Code*`, and the error model is in the
+[main README](../README.md#errors).
 
 ```go
 var apiErr *rails.Error

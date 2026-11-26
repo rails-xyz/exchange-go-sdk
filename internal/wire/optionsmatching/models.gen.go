@@ -211,9 +211,6 @@ type CreateOrderPayload struct {
 	// MaxSlippage Market-only; `0 - 1` inclusive. Defaults to `0.1`. `0` acts as IOC.
 	MaxSlippage *string `json:"maxSlippage,omitempty"`
 
-	// OrderId Unique identifier for the order. Generated if omitted.
-	OrderId *string `json:"orderId,omitempty"`
-
 	// OrderType Order side.
 	OrderType CreateOrderPayloadOrderType `json:"orderType"`
 
@@ -342,8 +339,14 @@ type OpenOrder struct {
 	// AvgFillPrice Volume-weighted average fill price; `0` while nothing has filled.
 	AvgFillPrice string `json:"avgFillPrice"`
 
+	// ClientRequestId `clientRequestId` of the latest request on the order, such as its create, modify or cancel request.
+	ClientRequestId *string `json:"clientRequestId,omitempty"`
+
 	// Contract Contract name.
 	Contract string `json:"contract"`
+
+	// CreateRequestId `clientRequestId` of the request that created the order. It never changes. Omitted when the order was created without one, such as a liquidation order.
+	CreateRequestId *string `json:"createRequestId,omitempty"`
 
 	// CreatedAt Order creation timestamp (milliseconds since epoch).
 	CreatedAt int64 `json:"createdAt"`
@@ -489,6 +492,15 @@ type RateLimited struct {
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
+
+// GetOptionsOrderStatusParams defines parameters for GetOptionsOrderStatus.
+type GetOptionsOrderStatusParams struct {
+	// OrderId Unique identifier of the order. Example value: `01JRQM8H5XYZABCDEFGHJKMNPQ`. You can get this value from the create, modify or cancel response. Send either `orderId` or `clientRequestId`, not both.
+	OrderId *string `form:"orderId,omitempty" json:"orderId,omitempty"`
+
+	// ClientRequestId The `clientRequestId` of a create, modify or cancel request you sent for the order. Use it only when the `orderId` is unknown. Send either `orderId` or `clientRequestId`, not both.
+	ClientRequestId *string `form:"clientRequestId,omitempty" json:"clientRequestId,omitempty"`
+}
 
 // GetOptionsOpenOrdersParams defines parameters for GetOptionsOpenOrders.
 type GetOptionsOpenOrdersParams struct {

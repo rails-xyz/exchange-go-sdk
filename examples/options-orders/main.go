@@ -1,7 +1,8 @@
 // Command options-orders places a post-only bid, modifies it and cancels it, then places two more
-// bids and sweeps the contract with a cancel-all whose cancels arrive as events. Every order goes
-// out under an order id of the program's own, so one whose outcome is unknown can still be
-// cancelled when the program stops. Orders are paced to the budget of the account's type.
+// bids and sweeps the contract with a cancel-all whose cancels arrive as events. Every create goes
+// out under a clientRequestId of the program's own, so an order whose create went unanswered can
+// still be found and cancelled when the program stops. Orders are paced to the budget of the
+// account's type.
 //
 // Set RAILS_API_KEY and RAILS_API_SECRET:
 //
@@ -19,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/google/uuid"
 	"github.com/rails-xyz/exchange-go-sdk/options"
 	"github.com/rails-xyz/exchange-go-sdk/rails"
 )
@@ -84,7 +85,7 @@ func run() error {
 	// Each command blocks until the exchange answers it.
 	created, err := place(ctx, conn, bid, live)
 	if err != nil {
-		return reconcile(client, err)
+		return reconcile(client, err, live)
 	}
 	fmt.Printf("created %s on %s: %s\n",
 		created.Order.OrderID, contract, created.Order.Status)
@@ -120,7 +121,7 @@ func run() error {
 	for range 2 {
 		created, err := place(ctx, conn, bid, live)
 		if err != nil {
-			return reconcile(client, err)
+			return reconcile(client, err, live)
 		}
 		fmt.Printf("created %s\n", created.Order.OrderID)
 	}
@@ -181,42 +182,49 @@ func run() error {
 	return nil
 }
 
-// place sends a bid under an order id of its own, tracked in live from before it goes out, so
-// a create whose outcome is unknown is still cancelled on exit. A refusal, or a command that
-// never left, placed nothing.
+// place sends a bid under a ClientRequestID of its own, which reconcile looks the order up by.
 func place(
 	ctx context.Context,
 	conn *options.Conn,
 	bid options.CreateOrderRequest,
 	live map[string]bool,
 ) (*options.OrderResult, error) {
-	bid.OrderID = ulid.Make().String()
-	live[bid.OrderID] = true
+	bid.ClientRequestID = uuid.NewString()
 	created, err := conn.CreateOrder(ctx, bid)
 	if err != nil {
-		if !outcomeUnknown(err) {
-			delete(live, bid.OrderID)
-		}
 		return nil, err
 	}
+	live[created.Order.OrderID] = true
 	return created, nil
 }
 
 // reconcile says what a create's failure means for the order. One that got no answer may still
-// have been applied, so the order is looked up by the id it went out under.
-func reconcile(client *options.Client, err error) error {
+// have been applied, so the order is looked up by the clientRequestId it went out under and,
+// when found, tracked in live to be cancelled on exit.
+func reconcile(client *options.Client, err error, live map[string]bool) error {
 	var apiErr *rails.Error
-	if !outcomeUnknown(err) || !errors.As(err, &apiErr) || apiErr.OrderID == "" {
+	if !outcomeUnknown(err) || !errors.As(err, &apiErr) || apiErr.ClientRequestID == "" {
 		return describe(err)
 	}
-	// The command's own context may be what ran out, so the lookup gets a fresh one.
+	// The command's own context may be what ran out, so the lookup gets a fresh one. A create
+	// the exchange has not reached yet is not found, so the lookup is retried until it is.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	status, lookupErr := client.OrderStatus(ctx, apiErr.OrderID)
-	if lookupErr != nil {
-		return fmt.Errorf("%w; looking order %s up: %w", err, apiErr.OrderID, lookupErr)
+	for {
+		status, lookupErr := client.OrderStatusByClientRequestID(ctx, apiErr.ClientRequestID)
+		if lookupErr == nil {
+			live[status.OrderID] = true
+			return fmt.Errorf("%w; order %s is %s", err, status.OrderID, status.Status)
+		}
+		if !errors.Is(lookupErr, rails.ErrNotFound) {
+			return fmt.Errorf("%w; looking the order up: %w", err, lookupErr)
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("%w; the order was not found within 10s", err)
+		case <-time.After(time.Second):
+		}
 	}
-	return fmt.Errorf("%w; order %s is %s", err, apiErr.OrderID, status.Status)
 }
 
 // outcomeUnknown reports whether a failed command may still have been applied.

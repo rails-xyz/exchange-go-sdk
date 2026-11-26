@@ -51,8 +51,6 @@ const (
 	CodeCreateOrderReduceOnly rails.Code = "OPT-0106"
 	// CodeCreateOrderMinValue is an order below the minimum contract value.
 	CodeCreateOrderMinValue rails.Code = "OPT-0107"
-	// CodeCreateOrderDuplicateOrderID is an orderId already resting on the contract.
-	CodeCreateOrderDuplicateOrderID rails.Code = "OPT-0108"
 
 	// CodeCancelOrderNotOwned is an order that belongs to another account.
 	CodeCancelOrderNotOwned rails.Code = "OPT-0201"

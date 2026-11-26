@@ -56,9 +56,6 @@ type Error struct {
 	APIQuotaLimit int64
 	// ClientRequestID correlates the failure with the exchange's own logs.
 	ClientRequestID string
-	// OrderID is the order a create named, set when its outcome is unknown so the order can be
-	// looked up.
-	OrderID string
 }
 
 func (e *Error) Error() string {

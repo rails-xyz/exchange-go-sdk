@@ -7,8 +7,19 @@ and versions follow [semantic versioning](https://semver.org/).
 
 ### Added
 
+- `options.Client.OrderStatusByClientRequestID`, which looks an order up by the
+  `ClientRequestID` of a request sent for it, for when its `OrderID` is unknown.
+- `ClientRequestID` on `options.OpenOrder` and `options.RecentOrder`.
+- `CreateRequestID` on `options.Order`, `options.OpenOrder` and `options.RecentOrder`.
 - `perps.CodeCreateOrderMinNotional` and `perps.CodeModifyOrderMinNotional`, returned when an
   order's value (price × quantity) is below the market's minimum order value.
+
+### Removed
+
+- `options.CreateOrderRequest.OrderID`: the exchange assigns every order's `OrderID`. An options
+  create whose outcome is unknown is looked up by its `ClientRequestID`.
+- `rails.Error.OrderID`, which carried that `OrderID`.
+- `options.CodeCreateOrderDuplicateOrderID`.
 
 ## [1.4.0]
 

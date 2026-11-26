@@ -176,22 +176,35 @@ func repeatedToken(op, sent, next string) error {
 // request returned. The exchange forgets an order an hour after its last update and answers
 // [rails.ErrNotFound].
 func (c *Client) OrderStatus(ctx context.Context, orderID string) (*OrderStatus, error) {
-	const op = "GET /v1/matching/orders/{orderId}"
-
 	if orderID == "" {
-		return nil, fmt.Errorf("%s: order id is required", op)
+		return nil, fmt.Errorf("%s: order id is required", opOrderStatus)
 	}
+	return c.orderStatus(ctx, url.Values{"orderId": {orderID}})
+}
+
+// OrderStatusByClientRequestID is [Client.OrderStatus] for an order whose OrderID you do not
+// have, by the ClientRequestID of a request you sent for it.
+func (c *Client) OrderStatusByClientRequestID(ctx context.Context, clientRequestID string) (*OrderStatus, error) {
+	if clientRequestID == "" {
+		return nil, fmt.Errorf("%s: client request id is required", opOrderStatus)
+	}
+	return c.orderStatus(ctx, url.Values{"clientRequestId": {clientRequestID}})
+}
+
+const opOrderStatus = "GET /v1/matching/order"
+
+func (c *Client) orderStatus(ctx context.Context, query url.Values) (*OrderStatus, error) {
 	var resp optionsmatching.OrderStatus
-	if err := c.http.Get(ctx, op, ClassReadOrders, c.cfg.Environment.OptionsURL, "/v1/matching/orders/"+url.PathEscape(orderID), nil, &resp); err != nil {
+	if err := c.http.Get(ctx, opOrderStatus, ClassReadOrders, c.cfg.Environment.OptionsURL, "/v1/matching/order", query, &resp); err != nil {
 		return nil, err
 	}
 	return orderStatusResponseToStatus(resp), nil
 }
 
 // createOrder, cancelOrder and cancelAllOrders carry a [Conn] command its socket could not,
-// with the ids it chose, so the outcome on the order stream answers to them. They are unpaced:
-// the command was paced before it reached the socket.
-func (c *Client) createOrder(ctx context.Context, req CreateOrderRequest, crid, orderID string) (Queued, error) {
+// with the clientRequestId it chose, so the outcome on the order stream answers to it. They are
+// unpaced: the command was paced before it reached the socket.
+func (c *Client) createOrder(ctx context.Context, req CreateOrderRequest, crid string) (Queued, error) {
 	const op = "POST /v1/matching/orders/create"
 
 	body := optionsmatching.CreateOptionsOrderJSONRequestBody{
@@ -205,7 +218,6 @@ func (c *Client) createOrder(ctx context.Context, req CreateOrderRequest, crid, 
 			PostOnly:    &req.PostOnly,
 			ReduceOnly:  &req.ReduceOnly,
 			MaxSlippage: optional(req.MaxSlippage),
-			OrderId:     &orderID,
 		},
 	}
 	var resp optionsmatching.CreateOrderQueued

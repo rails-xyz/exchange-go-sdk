@@ -378,6 +378,8 @@
                   "orders": [
                     {
                       "orderId": "01JRQM8H5XYZABCDEFGHJKMNPQ",
+                      "clientRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
+                      "createRequestId": "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55",
                       "contract": "BTC-7FEB26-100000-C",
                       "side": "buy",
                       "type": "limit",
@@ -429,17 +431,24 @@
         }
       }
     },
-    "/v1/matching/orders/{orderId}": {
+    "/v1/matching/order": {
       "get": {
         "summary": "Get Order Status",
         "operationId": "getOptionsOrderStatus",
-        "description": "Returns the current state of one order. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
+        "description": "Returns the current state of one of your orders, found by its `orderId` or, when the `orderId` is unknown, for example after a lost create response, by the `clientRequestId` of a create, modify or cancel request you sent for it. Send exactly one of the two. An order placed by another account is `404`, and a `clientRequestId` finds its order for about an hour after that request. See [Order Lifecycle](/latest/options/guides/order-lifecycle#placing-orders-over-http).",
         "parameters": [
           {
             "name": "orderId",
-            "in": "path",
-            "required": true,
-            "description": "Unique identifier of the order. Example value: `01JRQM8H5XYZABCDEFGHJKMNPQ`. You can get this value from the create, modify or cancel response.",
+            "in": "query",
+            "description": "Unique identifier of the order. Example value: `01JRQM8H5XYZABCDEFGHJKMNPQ`. You can get this value from the create, modify or cancel response. Send either `orderId` or `clientRequestId`, not both.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "query",
+            "description": "The `clientRequestId` of a create, modify or cancel request you sent for the order. Use it only when the `orderId` is unknown. Send either `orderId` or `clientRequestId`, not both.",
             "schema": {
               "type": "string"
             }
@@ -480,7 +489,7 @@
                     "slug": "BAD_REQUEST",
                     "code": "SYS-0006"
                   },
-                  "message": "orderId is required"
+                  "message": "send either orderId or clientRequestId"
                 }
               }
             }
@@ -723,10 +732,6 @@
       "CreateOrderPayload": {
         "type": "object",
         "properties": {
-          "orderId": {
-            "type": "string",
-            "description": "Unique identifier for the order. Generated if omitted."
-          },
           "contract": {
             "type": "string",
             "description": "Contract name. Example value: `BTC-7FEB26-100000-C`. To get all tradable contracts, call the [Get Contracts](/latest/options/rest-api/get-contracts) endpoint."
@@ -1154,6 +1159,14 @@
           "orderId": {
             "type": "string",
             "description": "Unique identifier for the order."
+          },
+          "clientRequestId": {
+            "type": "string",
+            "description": "`clientRequestId` of the latest request on the order, such as its create, modify or cancel request."
+          },
+          "createRequestId": {
+            "type": "string",
+            "description": "`clientRequestId` of the request that created the order. It never changes. Omitted when the order was created without one, such as a liquidation order."
           },
           "contract": {
             "type": "string",

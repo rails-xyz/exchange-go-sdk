@@ -352,6 +352,8 @@ func TestCancelOrderGoesOverHTTPWhenTheSocketIsDown(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, got.ViaHTTP)
 	assert.NotEmpty(t, got.Order.OrderID)
+	assert.Equal(t, crid, got.Order.ClientRequestID)
+	assert.Empty(t, got.Order.CreateRequestID)
 
 	sent := e.request()
 	assert.Equal(t, "/v1/matching/orders/cancel", sent.path)
@@ -407,9 +409,9 @@ func TestOnlyAReduceOnlyCreateGoesOverHTTPWhenTheSocketIsDown(t *testing.T) {
 			srv, conn := fallbackConn(t, e, options.ScopeAll())
 			takeDown(t, srv, conn)
 
-			const crid, orderID = "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55", "2b6c8e1a-0d4f-4e7b-9c3a-1f5d7e9b0a2c"
+			const crid = "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55"
 			req := limitOrder()
-			req.ReduceOnly, req.ClientRequestID, req.OrderID = reduceOnly, crid, orderID
+			req.ReduceOnly, req.ClientRequestID = reduceOnly, crid
 			got, err := conn.CreateOrder(t.Context(), req)
 
 			if !reduceOnly {
@@ -419,47 +421,36 @@ func TestOnlyAReduceOnlyCreateGoesOverHTTPWhenTheSocketIsDown(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.True(t, got.ViaHTTP)
+			assert.Equal(t, crid, got.Order.CreateRequestID)
 			body := spectest.Decode(t, e.request().body)
 			assert.Equal(t, crid, body["clientRequestId"])
-			assert.Equal(t, orderID, spectest.Decode(t, spectest.Raw(t, body["order"]))["orderId"])
 		})
 	}
 }
 
-// A create that may have executed is never resent, even reduce-only; its error names the order
-// to look up.
-func TestACreateWithAnUnknownOutcomeCarriesItsOrderID(t *testing.T) {
+// A create that may have executed is never resent, even reduce-only; its error carries the
+// clientRequestId to look the order up by.
+func TestACreateWithAnUnknownOutcomeIsNotResent(t *testing.T) {
 	e := answeredBySpec(t, "/v1/matching/orders/create")
-	hooked := make(chan error, 1)
-	srv, conn := fallbackConn(t, e, options.ScopeAll(), rails.WithHooks(rails.Hooks{
-		RequestDone: func(info rails.ReqInfo, _ time.Duration, err error) {
-			if info.Op == "createOrder" {
-				hooked <- err
-			}
-		},
-	}))
+	srv, conn := fallbackConn(t, e, options.ScopeAll())
 
 	req := limitOrder()
 	req.ReduceOnly = true
 	got := async(func() (*options.OrderResult, error) { return conn.CreateOrder(t.Context(), req) })
-	sent := spectest.Decode(t, command(t, srv, "createOrder").Content)
+	crid := command(t, srv, "createOrder").ClientRequestID()
 	takeDown(t, srv, conn)
 
 	var apiErr *rails.Error
 	err := spectest.Receive(t, got).err
 	require.ErrorAs(t, err, &apiErr)
 	assert.ErrorIs(t, err, rails.ErrConnClosed)
-	assert.Equal(t, sent["orderId"], apiErr.OrderID)
+	assert.Equal(t, crid, apiErr.ClientRequestID)
 	assert.Empty(t, e.requests)
-
-	var seen *rails.Error
-	require.ErrorAs(t, spectest.Receive(t, hooked), &seen)
-	assert.Empty(t, seen.OrderID, "the error the hooks hold was written to")
 }
 
-// A refusal over HTTP says what happened to the create; anything else may have queued it, so
-// the error names the order to look up.
-func TestAReduceOnlyCreateOverHTTPNamesItsOrderWhenTheOutcomeIsUnknown(t *testing.T) {
+// A refusal over HTTP says what happened to the create; a request that got no answer may have
+// queued it.
+func TestAReduceOnlyCreateOverHTTPCarriesItsClientRequestID(t *testing.T) {
 	refused := func(status int) func(http.ResponseWriter, *http.Request) {
 		return func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(status)
@@ -468,15 +459,13 @@ func TestAReduceOnlyCreateOverHTTPNamesItsOrderWhenTheOutcomeIsUnknown(t *testin
 	}
 	for name, tc := range map[string]struct {
 		handler    func(http.ResponseWriter, *http.Request)
-		unknown    bool
 		connClosed bool
 	}{
-		"refused":     {handler: refused(http.StatusBadRequest)},
-		"bad gateway": {handler: refused(http.StatusBadGateway), unknown: true},
+		"refused": {handler: refused(http.StatusBadRequest)},
 		"no answer": {handler: func(w http.ResponseWriter, _ *http.Request) {
 			conn, _, _ := w.(http.Hijacker).Hijack()
 			_ = conn.Close()
-		}, unknown: true, connClosed: true},
+		}, connClosed: true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			e := &exchange{t: t, srv: httptest.NewServer(http.HandlerFunc(tc.handler)), requests: make(chan request, 8), pacer: &classPacer{}}
@@ -484,22 +473,15 @@ func TestAReduceOnlyCreateOverHTTPNamesItsOrderWhenTheOutcomeIsUnknown(t *testin
 			srv, conn := fallbackConn(t, e, options.ScopeAll())
 			takeDown(t, srv, conn)
 
-			const crid, orderID = "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55", "2b6c8e1a-0d4f-4e7b-9c3a-1f5d7e9b0a2c"
+			const crid = "9f1c2c9e-3f4a-4a4e-9f10-2b7d3f2a1c55"
 			req := limitOrder()
-			req.ReduceOnly, req.ClientRequestID, req.OrderID = true, crid, orderID
+			req.ReduceOnly, req.ClientRequestID = true, crid
 			_, err := conn.CreateOrder(t.Context(), req)
 
 			var apiErr *rails.Error
 			require.ErrorAs(t, err, &apiErr)
 			assert.Equal(t, crid, apiErr.ClientRequestID)
-			if !tc.unknown {
-				assert.Empty(t, apiErr.OrderID)
-				return
-			}
-			assert.Equal(t, orderID, apiErr.OrderID)
-			if tc.connClosed {
-				assert.ErrorIs(t, err, rails.ErrConnClosed)
-			}
+			assert.Equal(t, tc.connClosed, errors.Is(err, rails.ErrConnClosed))
 		})
 	}
 }

@@ -199,14 +199,16 @@ type Position struct {
 type RecentOrder struct {
 	_ struct{}
 
-	OrderID        string
-	Contract       string
-	Side           OrderType
-	Type           TradeType
-	FillType       FillType // empty for a cancelled order
-	Price          string   // the price requested
-	Quantity       string   // the full order quantity
-	FilledQuantity string
+	OrderID         string
+	ClientRequestID string
+	CreateRequestID string
+	Contract        string
+	Side            OrderType
+	Type            TradeType
+	FillType        FillType // empty for a cancelled order
+	Price           string   // the price requested
+	Quantity        string   // the full order quantity
+	FilledQuantity  string
 	// AvgFillPrice is "0" while nothing has filled.
 	AvgFillPrice string
 	Fees         string // USDT; empty for a cancelled order, and over the WebSocket
@@ -219,13 +221,15 @@ type RecentOrder struct {
 type OpenOrder struct {
 	_ struct{}
 
-	OrderID        string
-	Contract       string
-	Side           OrderType
-	Type           TradeType
-	Price          string
-	Quantity       string
-	FilledQuantity string
+	OrderID         string
+	ClientRequestID string
+	CreateRequestID string
+	Contract        string
+	Side            OrderType
+	Type            TradeType
+	Price           string
+	Quantity        string
+	FilledQuantity  string
 	// AvgFillPrice is "0" while nothing has filled.
 	AvgFillPrice string
 	ReduceOnly   bool
@@ -252,6 +256,7 @@ type Order struct {
 	CreatedAt       int64
 	UpdatedAt       int64
 	ClientRequestID string
+	CreateRequestID string
 }
 
 // OrderStatus is what the exchange has recorded about an order. Fields it has not recorded yet

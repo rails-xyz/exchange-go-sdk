@@ -89,7 +89,7 @@ Everything after the credentials is an option on a product's `NewClient`, such a
 
 Every failure the exchange described is a `*rails.Error` carrying the operation, the status
 code, the machine-readable `Slug` and `Code`, the message, how long the exchange asked you to
-wait, the `clientRequestId`, and for an options create whose outcome is unknown the `OrderID`.
+wait, and the `clientRequestId`.
 The message is for people and may be reworded; the code never changes meaning, so branch on it.
 Shared codes are `rails.Code*`, each product's route codes are in its package (`perps.Code*`,
 [with an example](perps/README.md#errors), and `options.Code*`), one constant per condition the

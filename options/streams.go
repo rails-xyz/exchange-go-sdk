@@ -578,37 +578,41 @@ func (w wirePosition) toPosition() Position {
 
 // wireOpenOrder is an open order; Kind is set only in a delta.
 type wireOpenOrder struct {
-	OrderID        string `json:"orderId"`
-	Contract       string `json:"contract"`
-	Side           string `json:"side"`
-	Type           string `json:"type"`
-	InitiatorType  string `json:"initiatorType"`
-	Price          string `json:"price"`
-	Quantity       string `json:"quantity"`
-	FilledQuantity string `json:"filledQuantity"`
-	AvgFillPrice   string `json:"avgFillPrice"`
-	Leverage       string `json:"leverage"`
-	ReduceOnly     bool   `json:"reduceOnly"`
-	PostOnly       bool   `json:"postOnly"`
-	CreatedAt      int64  `json:"createdAt"`
-	UpdatedAt      int64  `json:"updatedAt"`
-	Kind           string `json:"kind"`
+	OrderID         string `json:"orderId"`
+	ClientRequestID string `json:"clientRequestId"`
+	CreateRequestID string `json:"createRequestId"`
+	Contract        string `json:"contract"`
+	Side            string `json:"side"`
+	Type            string `json:"type"`
+	InitiatorType   string `json:"initiatorType"`
+	Price           string `json:"price"`
+	Quantity        string `json:"quantity"`
+	FilledQuantity  string `json:"filledQuantity"`
+	AvgFillPrice    string `json:"avgFillPrice"`
+	Leverage        string `json:"leverage"`
+	ReduceOnly      bool   `json:"reduceOnly"`
+	PostOnly        bool   `json:"postOnly"`
+	CreatedAt       int64  `json:"createdAt"`
+	UpdatedAt       int64  `json:"updatedAt"`
+	Kind            string `json:"kind"`
 }
 
 func (w wireOpenOrder) toOpenOrder() OpenOrder {
 	return OpenOrder{
-		OrderID:        w.OrderID,
-		Contract:       w.Contract,
-		Side:           OrderType(w.Side),
-		Type:           TradeType(w.Type),
-		Price:          w.Price,
-		Quantity:       w.Quantity,
-		FilledQuantity: w.FilledQuantity,
-		AvgFillPrice:   w.AvgFillPrice,
-		ReduceOnly:     w.ReduceOnly,
-		PostOnly:       w.PostOnly,
-		CreatedAt:      w.CreatedAt,
-		UpdatedAt:      w.UpdatedAt,
+		OrderID:         w.OrderID,
+		ClientRequestID: w.ClientRequestID,
+		CreateRequestID: w.CreateRequestID,
+		Contract:        w.Contract,
+		Side:            OrderType(w.Side),
+		Type:            TradeType(w.Type),
+		Price:           w.Price,
+		Quantity:        w.Quantity,
+		FilledQuantity:  w.FilledQuantity,
+		AvgFillPrice:    w.AvgFillPrice,
+		ReduceOnly:      w.ReduceOnly,
+		PostOnly:        w.PostOnly,
+		CreatedAt:       w.CreatedAt,
+		UpdatedAt:       w.UpdatedAt,
 	}
 }
 
@@ -617,33 +621,37 @@ func (w wireOpenOrder) toChange() OpenOrderChange {
 }
 
 type wireRecentOrder struct {
-	OrderID        string `json:"orderId"`
-	Contract       string `json:"contract"`
-	Side           string `json:"side"`
-	Type           string `json:"type"`
-	FillType       string `json:"fillType"`
-	Price          string `json:"price"`
-	Quantity       string `json:"quantity"`
-	FilledQuantity string `json:"filledQuantity"`
-	AvgFillPrice   string `json:"avgFillPrice"`
-	Leverage       string `json:"leverage"`
-	CreatedAt      int64  `json:"createdAt"`
-	UpdatedAt      int64  `json:"updatedAt"`
+	OrderID         string `json:"orderId"`
+	ClientRequestID string `json:"clientRequestId"`
+	CreateRequestID string `json:"createRequestId"`
+	Contract        string `json:"contract"`
+	Side            string `json:"side"`
+	Type            string `json:"type"`
+	FillType        string `json:"fillType"`
+	Price           string `json:"price"`
+	Quantity        string `json:"quantity"`
+	FilledQuantity  string `json:"filledQuantity"`
+	AvgFillPrice    string `json:"avgFillPrice"`
+	Leverage        string `json:"leverage"`
+	CreatedAt       int64  `json:"createdAt"`
+	UpdatedAt       int64  `json:"updatedAt"`
 }
 
 func (w wireRecentOrder) toRecentOrder() RecentOrder {
 	return RecentOrder{
-		OrderID:        w.OrderID,
-		Contract:       w.Contract,
-		Side:           OrderType(w.Side),
-		Type:           TradeType(w.Type),
-		FillType:       FillType(w.FillType),
-		Price:          w.Price,
-		Quantity:       w.Quantity,
-		FilledQuantity: w.FilledQuantity,
-		AvgFillPrice:   w.AvgFillPrice,
-		CreatedAt:      w.CreatedAt,
-		UpdatedAt:      w.UpdatedAt,
+		OrderID:         w.OrderID,
+		ClientRequestID: w.ClientRequestID,
+		CreateRequestID: w.CreateRequestID,
+		Contract:        w.Contract,
+		Side:            OrderType(w.Side),
+		Type:            TradeType(w.Type),
+		FillType:        FillType(w.FillType),
+		Price:           w.Price,
+		Quantity:        w.Quantity,
+		FilledQuantity:  w.FilledQuantity,
+		AvgFillPrice:    w.AvgFillPrice,
+		CreatedAt:       w.CreatedAt,
+		UpdatedAt:       w.UpdatedAt,
 	}
 }
 

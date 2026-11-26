@@ -236,13 +236,13 @@ func TestEveryOperationAgainstItsSpecExample(t *testing.T) {
 			want: &options.Page[options.RecentOrder]{
 				Items: []options.RecentOrder{
 					{
-						OrderID: "01J9G4K19776J1CTA8YXA8AA5H", Contract: "BTC-3JUL26-62000-C",
+						OrderID: "01J9G4K19776J1CTA8YXA8AA5H", ClientRequestID: "5e8b1d47-0c2a-4f96-9b3e-a7d2c6f1e804", CreateRequestID: "5e8b1d47-0c2a-4f96-9b3e-a7d2c6f1e804", Contract: "BTC-3JUL26-62000-C",
 						Side: options.OrderTypeBuy, Type: options.TradeTypeLimit, FillType: options.FillTypeComplete,
 						Price: "120", Quantity: "2", FilledQuantity: "2", AvgFillPrice: "110", Fees: "36.9",
 						CreatedAt: 1751284800000, UpdatedAt: 1751284803120,
 					},
 					{
-						OrderID: "01J9G51ABC7QK2DTB9ZYC9BB6J", Contract: "BTC-3JUL26-60000-P",
+						OrderID: "01J9G51ABC7QK2DTB9ZYC9BB6J", ClientRequestID: "a1c93f06-7e2d-4b58-8f4a-3d6e9b0c2f71", CreateRequestID: "a1c93f06-7e2d-4b58-8f4a-3d6e9b0c2f71", Contract: "BTC-3JUL26-60000-P",
 						Side: options.OrderTypeSell, Type: options.TradeTypeMarket, FillType: options.FillTypePartial,
 						Price: "15.40", Quantity: "3", FilledQuantity: "1", AvgFillPrice: "15.75", Fees: "1.52375",
 						CreatedAt: 1751288400000, UpdatedAt: 1751288460500,
@@ -295,16 +295,32 @@ func TestEveryOperationAgainstItsSpecExample(t *testing.T) {
 			wire:  &optionsmatching.OpenOrders{},
 			want: &options.Page[options.OpenOrder]{
 				Items: []options.OpenOrder{{
-					OrderID: orderID, Contract: contract, Side: options.OrderTypeBuy, Type: options.TradeTypeLimit,
+					OrderID: orderID, ClientRequestID: crid, CreateRequestID: crid, Contract: contract, Side: options.OrderTypeBuy, Type: options.TradeTypeLimit,
 					Price: "1250.5", Quantity: "2", FilledQuantity: "1", AvgFillPrice: "1249",
 					CreatedAt: 1770000000000, UpdatedAt: 1770000001500,
 				}},
 			},
 		},
 		{
-			spec: "options-matching", op: "GET /v1/matching/orders/{orderId}",
+			spec: "options-matching", op: "GET /v1/matching/order",
 			call:  func(ctx context.Context, c *options.Client) (any, error) { return c.OrderStatus(ctx, orderID) },
-			path:  "/v1/matching/orders/" + orderID,
+			path:  "/v1/matching/order",
+			query: url.Values{"orderId": {orderID}},
+			class: options.ClassReadOrders,
+			wire:  &optionsmatching.OrderStatus{},
+			want: &options.OrderStatus{
+				OrderID: orderID, ClientRequestID: crid, Contract: contract,
+				Status: options.StatusOpen, Action: options.ActionCreate, Body: "order accepted",
+				Quantity: "2", FilledQuantity: "1", RemainingQuantity: "1", UpdatedAt: 1770000001500,
+			},
+		},
+		{
+			spec: "options-matching", op: "GET /v1/matching/order",
+			call: func(ctx context.Context, c *options.Client) (any, error) {
+				return c.OrderStatusByClientRequestID(ctx, crid)
+			},
+			path:  "/v1/matching/order",
+			query: url.Values{"clientRequestId": {crid}},
 			class: options.ClassReadOrders,
 			wire:  &optionsmatching.OrderStatus{},
 			want: &options.OrderStatus{
@@ -468,10 +484,10 @@ func TestRepeatedPageTokenIsAnError(t *testing.T) {
 }
 
 func TestPathParametersAreEscaped(t *testing.T) {
-	e := newExchange(t, http.StatusOK, []byte(`{"status":"pending","updatedAt":1}`))
-	_, err := e.client().OrderStatus(t.Context(), "my/order 1")
+	e := newExchange(t, http.StatusOK, []byte(`{}`))
+	_, err := e.client().Expirations(t.Context(), "my/market 1")
 	require.NoError(t, err)
-	assert.Equal(t, "/v1/matching/orders/my%2Forder%201", e.request().path)
+	assert.Equal(t, "/v1/contracts/markets/my%2Fmarket%201/expirations", e.request().path)
 }
 
 func TestRequiredInputsAreCheckedBeforeSending(t *testing.T) {
@@ -483,6 +499,10 @@ func TestRequiredInputsAreCheckedBeforeSending(t *testing.T) {
 		"expirations without a market": func() error { _, err := client.Expirations(ctx, ""); return err },
 		"contracts without an expiry":  func() error { _, err := client.Contracts(ctx, "BTC-USDT", ""); return err },
 		"order status without an id":   func() error { _, err := client.OrderStatus(ctx, ""); return err },
+		"order status without a client request id": func() error {
+			_, err := client.OrderStatusByClientRequestID(ctx, "")
+			return err
+		},
 		"recent orders without status": func() error {
 			_, err := client.RecentOrders(ctx, options.RecentOrdersQuery{})
 			return err

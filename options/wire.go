@@ -118,18 +118,20 @@ func recentOrdersResponseToPage(w optionsaccount.RecentOrders) *Page[RecentOrder
 	page := &Page[RecentOrder]{Items: make([]RecentOrder, 0, len(wire)), Next: deref(w.NextPageToken)}
 	for _, o := range wire {
 		page.Items = append(page.Items, RecentOrder{
-			OrderID:        deref(o.OrderId),
-			Contract:       deref(o.Contract),
-			Side:           OrderType(deref(o.Side)),
-			Type:           TradeType(deref(o.Type)),
-			FillType:       FillType(deref(o.FillType)),
-			Price:          deref(o.Price),
-			Quantity:       deref(o.Quantity),
-			FilledQuantity: deref(o.FilledQuantity),
-			AvgFillPrice:   deref(o.AvgFillPrice),
-			Fees:           deref(o.Fees),
-			CreatedAt:      deref(o.CreatedAt),
-			UpdatedAt:      deref(o.UpdatedAt),
+			OrderID:         deref(o.OrderId),
+			ClientRequestID: deref(o.ClientRequestId),
+			CreateRequestID: deref(o.CreateRequestId),
+			Contract:        deref(o.Contract),
+			Side:            OrderType(deref(o.Side)),
+			Type:            TradeType(deref(o.Type)),
+			FillType:        FillType(deref(o.FillType)),
+			Price:           deref(o.Price),
+			Quantity:        deref(o.Quantity),
+			FilledQuantity:  deref(o.FilledQuantity),
+			AvgFillPrice:    deref(o.AvgFillPrice),
+			Fees:            deref(o.Fees),
+			CreatedAt:       deref(o.CreatedAt),
+			UpdatedAt:       deref(o.UpdatedAt),
 		})
 	}
 	return page
@@ -168,18 +170,20 @@ func openOrdersResponseToPage(w optionsmatching.OpenOrders) *Page[OpenOrder] {
 	page := &Page[OpenOrder]{Items: make([]OpenOrder, 0, len(w.Orders)), Next: deref(w.NextPageToken)}
 	for _, o := range w.Orders {
 		page.Items = append(page.Items, OpenOrder{
-			OrderID:        o.OrderId,
-			Contract:       o.Contract,
-			Side:           OrderType(o.Side),
-			Type:           TradeType(o.Type),
-			Price:          o.Price,
-			Quantity:       o.Quantity,
-			FilledQuantity: o.FilledQuantity,
-			AvgFillPrice:   o.AvgFillPrice,
-			ReduceOnly:     o.ReduceOnly,
-			PostOnly:       o.PostOnly,
-			CreatedAt:      o.CreatedAt,
-			UpdatedAt:      o.UpdatedAt,
+			OrderID:         o.OrderId,
+			ClientRequestID: deref(o.ClientRequestId),
+			CreateRequestID: deref(o.CreateRequestId),
+			Contract:        o.Contract,
+			Side:            OrderType(o.Side),
+			Type:            TradeType(o.Type),
+			Price:           o.Price,
+			Quantity:        o.Quantity,
+			FilledQuantity:  o.FilledQuantity,
+			AvgFillPrice:    o.AvgFillPrice,
+			ReduceOnly:      o.ReduceOnly,
+			PostOnly:        o.PostOnly,
+			CreatedAt:       o.CreatedAt,
+			UpdatedAt:       o.UpdatedAt,
 		})
 	}
 	return page
