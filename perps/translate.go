@@ -164,8 +164,8 @@ type wireTrade struct {
 	OriginalQuantity string `json:"originalQuantity"`
 	Leverage         string `json:"leverage"`
 	Fees             string `json:"fees"`
-	CreatedAt        int64  `json:"createdAt"`
-	UpdatedAt        int64  `json:"updatedAt"`
+	CreatedAt        int64  `json:"orderCreatedAt"`
+	UpdatedAt        int64  `json:"orderFilledAt"`
 	TriggerType      string `json:"triggerType"`
 	TriggerPrice     string `json:"triggerPrice"`
 	TriggerCreatedAt int64  `json:"triggerCreatedAt"`

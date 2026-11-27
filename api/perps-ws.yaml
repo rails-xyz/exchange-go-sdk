@@ -573,11 +573,11 @@ components:
         fees:
           type: string
           description: Fees charged for the trade
-        createdAt:
+        orderCreatedAt:
           type: integer
           format: int64
           description: Order creation timestamp (milliseconds since epoch)
-        updatedAt:
+        orderFilledAt:
           type: integer
           format: int64
           description: Fill timestamp (milliseconds since epoch)
@@ -605,8 +605,8 @@ components:
         - originalQuantity
         - leverage
         - fees
-        - createdAt
-        - updatedAt
+        - orderCreatedAt
+        - orderFilledAt
         - triggerType
         - triggerPrice
         - triggerCreatedAt
@@ -2241,8 +2241,8 @@ components:
                 originalQuantity: "30"
                 leverage: "1"
                 fees: "2174.12877357"
-                createdAt: 1745436937022
-                updatedAt: 1745436937055
+                orderCreatedAt: 1745436937022
+                orderFilledAt: 1745436937055
                 triggerType: none
                 triggerPrice: "0"
                 triggerCreatedAt: 0
@@ -2258,8 +2258,8 @@ components:
                 originalQuantity: "30"
                 leverage: "1"
                 fees: "613.21590"
-                createdAt: 1745436937022
-                updatedAt: 1745436937056
+                orderCreatedAt: 1745436937022
+                orderFilledAt: 1745436937056
                 triggerType: none
                 triggerPrice: "0"
                 triggerCreatedAt: 0
