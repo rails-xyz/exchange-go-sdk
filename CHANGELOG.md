@@ -5,10 +5,10 @@ and versions follow [semantic versioning](https://semver.org/).
 
 ## [1.6.0]
 
-### Fixed
+### Changed
 
-- `CreatedAt` and `UpdatedAt` on `perps.Trade` are read from the fields the exchange now sends,
-  `orderCreatedAt` and `orderFilledAt`, instead of always being 0.
+- `CreatedAt` and `UpdatedAt` on `perps.Trade` are renamed `OrderCreatedAt` and `OrderFilledAt`,
+  matching the fields the exchange now sends. They were always 0 before.
 
 ## [1.5.0]
 
