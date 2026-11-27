@@ -3,6 +3,13 @@
 Notable changes to this module. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and versions follow [semantic versioning](https://semver.org/).
 
+## [1.6.0]
+
+### Changed
+
+- `CreatedAt` and `UpdatedAt` on `perps.Trade` are renamed `OrderCreatedAt` and `OrderFilledAt`,
+  matching the fields the exchange now sends. They were always 0 before.
+
 ## [1.5.0]
 
 ### Added

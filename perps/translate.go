@@ -164,8 +164,8 @@ type wireTrade struct {
 	OriginalQuantity string `json:"originalQuantity"`
 	Leverage         string `json:"leverage"`
 	Fees             string `json:"fees"`
-	CreatedAt        int64  `json:"createdAt"`
-	UpdatedAt        int64  `json:"updatedAt"`
+	OrderCreatedAt   int64  `json:"orderCreatedAt"`
+	OrderFilledAt    int64  `json:"orderFilledAt"`
 	TriggerType      string `json:"triggerType"`
 	TriggerPrice     string `json:"triggerPrice"`
 	TriggerCreatedAt int64  `json:"triggerCreatedAt"`
@@ -187,8 +187,8 @@ func tradesFromWire(wire []wireTrade) []Trade {
 			OriginalQuantity: w.OriginalQuantity,
 			Leverage:         w.Leverage,
 			Fees:             w.Fees,
-			CreatedAt:        w.CreatedAt,
-			UpdatedAt:        w.UpdatedAt,
+			OrderCreatedAt:   w.OrderCreatedAt,
+			OrderFilledAt:    w.OrderFilledAt,
 			TriggerType:      TriggerType(w.TriggerType),
 			TriggerPrice:     w.TriggerPrice,
 			TriggerCreatedAt: w.TriggerCreatedAt,

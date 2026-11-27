@@ -246,7 +246,7 @@ type CompletedOrder struct {
 }
 
 // Trade is one fill on one of the account's orders. Quantity is the fill's and
-// OriginalQuantity the order's; CreatedAt is the order's and UpdatedAt the fill's.
+// OriginalQuantity the order's; OrderCreatedAt is the order's and OrderFilledAt the fill's.
 // TriggerPrice is "0" when TriggerType is TriggerTypeNone.
 type Trade struct {
 	_ struct{}
@@ -263,8 +263,8 @@ type Trade struct {
 	OriginalQuantity string
 	Leverage         string
 	Fees             string
-	CreatedAt        int64
-	UpdatedAt        int64
+	OrderCreatedAt   int64
+	OrderFilledAt    int64
 	TriggerType      TriggerType
 	TriggerPrice     string
 	TriggerCreatedAt int64
